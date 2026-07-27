@@ -2,37 +2,60 @@
 
 import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from "react";
 import {
-  VOICE_ORB_SCALES,
+  ORB_SCALES,
   Orb,
-  type VoiceOrbAdapter,
-  type VoiceOrbScale,
-  type VoiceOrbSignal,
-  type VoiceOrbState,
+  type OrbAdapter,
   type OrbCloudMode,
   type OrbControlAppearance,
   type OrbControlPosition,
+  type OrbScale,
+  type OrbSignal,
+  type OrbState,
   type OrbTheme,
 } from "vorb-ui";
 
-const STATES: VoiceOrbState[] = [
-  "idle",
-  "connecting",
-  "listening",
-  "thinking",
-  "speaking",
-  "error",
+const STATES: Array<{ value: OrbState; label: string }> = [
+  { value: "idle", label: "Idle" },
+  { value: "connecting", label: "Connecting" },
+  { value: "listening", label: "Listening" },
+  { value: "thinking", label: "Thinking" },
+  { value: "speaking", label: "Speaking" },
+  { value: "error", label: "Error" },
 ];
-const THEMES: OrbTheme[] = ["radial", "cloud", "circle", "bars", "debug"];
-const CONTROL_POSITIONS: OrbControlPosition[] = [
-  "bottom",
-  "top",
-  "overlay-bottom",
-  "overlay-center",
-  "overlay-top",
+const THEMES: Array<{ value: OrbTheme; label: string }> = [
+  { value: "radial", label: "Radial" },
+  { value: "cloud", label: "Cloud" },
+  { value: "circle", label: "Circle" },
+  { value: "bars", label: "Bars" },
+  { value: "debug", label: "Debug" },
 ];
-const CONTROL_APPEARANCES: OrbControlAppearance[] = ["glass", "solid", "minimal"];
+const CLOUD_MODES: Array<{ value: OrbCloudMode; label: string }> = [
+  { value: "shell", label: "Shell" },
+  { value: "gas", label: "Gas" },
+  { value: "vapor", label: "Vapor" },
+];
+const CONTROL_POSITIONS: Array<{ value: OrbControlPosition; label: string }> = [
+  { value: "bottom", label: "Below" },
+  { value: "top", label: "Above" },
+  { value: "overlay-bottom", label: "Overlay bottom" },
+  { value: "overlay-center", label: "Overlay center" },
+  { value: "overlay-top", label: "Overlay top" },
+];
+const CONTROL_APPEARANCES: Array<{ value: OrbControlAppearance; label: string }> = [
+  { value: "minimal", label: "Minimal" },
+  { value: "glass", label: "Glass" },
+  { value: "solid", label: "Solid" },
+];
 
-const CUSTOM_SCALE: VoiceOrbScale = {
+type SignalSource = "manual" | "simulation" | "microphone";
+
+const SIGNAL_SOURCES: Array<{ value: SignalSource; label: string }> = [
+  { value: "manual", label: "Manual" },
+  { value: "simulation", label: "Simulated call" },
+  { value: "microphone", label: "Microphone" },
+];
+
+const CUSTOM_SCALE: OrbScale = {
   base: "crystal",
   colors: {
     main: {
@@ -51,46 +74,50 @@ const CUSTOM_SCALE: VoiceOrbScale = {
 
 const SCALE_OPTIONS: Array<{
   name: string;
-  scale: VoiceOrbScale;
+  code: string;
+  scale: OrbScale;
   swatch: string;
 }> = [
   {
-    name: VOICE_ORB_SCALES.crystal.label,
+    name: ORB_SCALES.crystal.label,
+    code: '"crystal"',
     scale: "crystal",
-    swatch: VOICE_ORB_SCALES.crystal.colors.main.base,
+    swatch: ORB_SCALES.crystal.colors.main.base,
   },
   {
-    name: VOICE_ORB_SCALES.ember.label,
+    name: ORB_SCALES.ember.label,
+    code: '"ember"',
     scale: "ember",
-    swatch: VOICE_ORB_SCALES.ember.colors.main.base,
+    swatch: ORB_SCALES.ember.colors.main.base,
   },
   {
-    name: VOICE_ORB_SCALES.iris.label,
+    name: ORB_SCALES.iris.label,
+    code: '"iris"',
     scale: "iris",
-    swatch: VOICE_ORB_SCALES.iris.colors.main.base,
+    swatch: ORB_SCALES.iris.colors.main.base,
   },
   {
-    name: VOICE_ORB_SCALES.lagoon.label,
+    name: ORB_SCALES.lagoon.label,
+    code: '"lagoon"',
     scale: "lagoon",
-    swatch: VOICE_ORB_SCALES.lagoon.colors.main.base,
+    swatch: ORB_SCALES.lagoon.colors.main.base,
   },
   {
     name: "Custom",
+    code: "{ customScale }",
     scale: CUSTOM_SCALE,
     swatch: "#7860c7",
   },
 ];
 
-type DemoMode = "controlled" | "adapter" | "microphone";
-
-class DemoVoiceAdapter implements VoiceOrbAdapter {
-  private listeners = new Set<(signal: VoiceOrbSignal) => void>();
-  private signal: VoiceOrbSignal = { state: "idle" };
+class DemoVoiceAdapter implements OrbAdapter {
+  private listeners = new Set<(signal: OrbSignal) => void>();
+  private signal: OrbSignal = { state: "idle" };
   private connectTimer = 0;
   private animationTimer = 0;
   private startedAt = 0;
 
-  subscribe(listener: (signal: VoiceOrbSignal) => void) {
+  subscribe(listener: (signal: OrbSignal) => void) {
     this.listeners.add(listener);
     listener(this.signal);
     return () => this.listeners.delete(listener);
@@ -147,7 +174,7 @@ class DemoVoiceAdapter implements VoiceOrbAdapter {
     return Math.min(maximum, Math.max(minimum, voice * envelope));
   }
 
-  private emit(signal: VoiceOrbSignal) {
+  private emit(signal: OrbSignal) {
     this.signal = signal;
     this.listeners.forEach((listener) => listener(signal));
   }
@@ -222,17 +249,18 @@ function InspectorSection({
 }
 
 export function OrbPlayground() {
-  const [mode, setMode] = useState<DemoMode>("controlled");
-  const [state, setState] = useState<VoiceOrbState>("idle");
+  const [source, setSource] = useState<SignalSource>("manual");
+  const [manualState, setManualState] = useState<OrbState>("idle");
+  const [adapterSignal, setAdapterSignal] = useState<OrbSignal>({ state: "idle" });
   const [theme, setTheme] = useState<OrbTheme>("cloud");
   const [cloudMode, setCloudMode] = useState<OrbCloudMode>("vapor");
   const [inputVolume, setInputVolume] = useState(0.35);
   const [outputVolume, setOutputVolume] = useState(0.62);
   const [size, setSize] = useState(280);
   const [controlPosition, setControlPosition] = useState<OrbControlPosition>("bottom");
-  const [controlAppearance, setControlAppearance] = useState<OrbControlAppearance>("glass");
-  const [controlSize, setControlSize] = useState(48);
-  const [controlGap, setControlGap] = useState(10);
+  const [controlAppearance, setControlAppearance] = useState<OrbControlAppearance>("minimal");
+  const [controlSize, setControlSize] = useState(44);
+  const [controlGap, setControlGap] = useState(14);
   const [ballScale, setBallScale] = useState(0.84);
   const [smokeScale, setSmokeScale] = useState(0.78);
   const [speed, setSpeed] = useState(1);
@@ -241,49 +269,126 @@ export function OrbPlayground() {
   const [attack, setAttack] = useState(0.65);
   const [release, setRelease] = useState(0.22);
   const [scaleIndex, setScaleIndex] = useState(0);
-  const [interactive, setInteractive] = useState(true);
+  const [showCallControl, setShowCallControl] = useState(true);
   const [reducedMotion, setReducedMotion] = useState(false);
+  const [copied, setCopied] = useState(false);
   const adapter = useMemo(() => new DemoVoiceAdapter(), []);
-  const selectedScale = SCALE_OPTIONS[scaleIndex];
+  const selectedScale = SCALE_OPTIONS[scaleIndex] ?? SCALE_OPTIONS[0];
 
   useEffect(() => {
-    if (mode !== "adapter") return;
-    const unsubscribe = adapter.subscribe((signal) => setState(signal.state));
+    if (source !== "simulation") return;
+    const unsubscribe = adapter.subscribe(setAdapterSignal);
     return () => {
       unsubscribe();
       void adapter.stop();
     };
-  }, [adapter, mode]);
+  }, [adapter, source]);
 
-  const controlledSignal: VoiceOrbSignal = {
-    state,
-    inputVolume,
-    outputVolume,
-    error: state === "error" ? new Error("The demo connection was interrupted.") : undefined,
+  useEffect(() => {
+    if (!copied) return;
+    const timer = window.setTimeout(() => setCopied(false), 1600);
+    return () => window.clearTimeout(timer);
+  }, [copied]);
+
+  const manualSignal: OrbSignal = {
+    state: manualState,
+    inputVolume: manualState === "listening" ? inputVolume : 0,
+    outputVolume: manualState === "speaking" ? outputVolume : 0,
+    error: manualState === "error" ? new Error("The demo connection was interrupted.") : undefined,
   };
+  const previewSignal =
+    source === "simulation"
+      ? adapterSignal
+      : source === "manual"
+        ? manualSignal
+        : { state: "idle" as const };
+  const sourceLabel =
+    SIGNAL_SOURCES.find((item) => item.value === source)?.label ?? SIGNAL_SOURCES[0].label;
+  const inputLevel = previewSignal.inputVolume ?? 0;
+  const outputLevel = previewSignal.outputVolume ?? 0;
+
   const supportStatus =
-    mode === "microphone"
+    source === "microphone"
       ? undefined
-      : state === "connecting"
-        ? "Starting support session…"
-        : state === "thinking"
+      : previewSignal.state === "connecting"
+        ? "Connecting…"
+        : previewSignal.state === "thinking"
           ? "Looking up your order…"
-          : state === "error"
-            ? "Session needs attention"
+          : previewSignal.state === "error"
+            ? "Connection interrupted"
             : undefined;
 
+  const codeExample = useMemo(() => {
+    const sourceProp =
+      source === "manual"
+        ? `signal={{ state: "${manualState}", inputVolume: ${inputVolume.toFixed(2)}, outputVolume: ${outputVolume.toFixed(2)} }}`
+        : source === "simulation"
+          ? "adapter={adapter}"
+          : "requestMicrophone";
+    const props = [
+      `theme="${theme}"`,
+      ...(theme === "cloud"
+        ? [
+            `cloudMode="${cloudMode}"`,
+            `ballScale={${ballScale.toFixed(2)}}`,
+            `smokeScale={${smokeScale.toFixed(2)}}`,
+          ]
+        : []),
+      `size={${size}}`,
+      `scale=${selectedScale.code}`,
+      sourceProp,
+      showCallControl
+        ? `control={{ position: "${controlPosition}", appearance: "${controlAppearance}", size: ${controlSize}, gap: ${controlGap} }}`
+        : "interactive={false}",
+      `motion={{ speed: ${reducedMotion ? 0 : speed.toFixed(1)}, intensity: ${intensity.toFixed(1)}, sensitivity: ${sensitivity.toFixed(1)}, attack: ${attack.toFixed(2)}, release: ${release.toFixed(2)} }}`,
+    ];
+    return `<Orb ${props.join(" ")} />`;
+  }, [
+    attack,
+    ballScale,
+    cloudMode,
+    controlAppearance,
+    controlGap,
+    controlPosition,
+    controlSize,
+    inputVolume,
+    intensity,
+    manualState,
+    outputVolume,
+    reducedMotion,
+    release,
+    selectedScale.code,
+    sensitivity,
+    showCallControl,
+    size,
+    smokeScale,
+    source,
+    speed,
+    theme,
+  ]);
+
+  const copyCode = async () => {
+    try {
+      await navigator.clipboard.writeText(codeExample);
+      setCopied(true);
+    } catch {
+      setCopied(false);
+    }
+  };
+
   const resetPlayground = () => {
-    setMode("controlled");
-    setState("idle");
+    setSource("manual");
+    setManualState("idle");
+    setAdapterSignal({ state: "idle" });
     setTheme("cloud");
     setCloudMode("vapor");
     setInputVolume(0.35);
     setOutputVolume(0.62);
     setSize(280);
     setControlPosition("bottom");
-    setControlAppearance("glass");
-    setControlSize(48);
-    setControlGap(10);
+    setControlAppearance("minimal");
+    setControlSize(44);
+    setControlGap(14);
     setBallScale(0.84);
     setSmokeScale(0.78);
     setSpeed(1);
@@ -292,33 +397,35 @@ export function OrbPlayground() {
     setAttack(0.65);
     setRelease(0.22);
     setScaleIndex(0);
-    setInteractive(true);
+    setShowCallControl(true);
     setReducedMotion(false);
+    setCopied(false);
   };
 
   return (
     <div className="workbench">
       <header className="workbench__toolbar">
         <div className="workbench__identity">
-          <span className="workbench__status" data-state={state} aria-hidden="true" />
+          <span className="workbench__status" data-state={previewSignal.state} aria-hidden="true" />
           <div>
-            <p>Live component</p>
-            <span>{state}</span>
+            <p>{sourceLabel}</p>
+            <span>{previewSignal.state}</span>
           </div>
         </div>
-        <div className="mode-tabs" aria-label="Integration mode">
-          {(["controlled", "adapter", "microphone"] as DemoMode[]).map((item) => (
+        <div className="mode-tabs" aria-label="Signal source">
+          {SIGNAL_SOURCES.map((item) => (
             <button
-              key={item}
+              key={item.value}
               type="button"
-              className={mode === item ? "is-active" : ""}
-              aria-pressed={mode === item}
+              className={source === item.value ? "is-active" : ""}
+              aria-pressed={source === item.value}
               onClick={() => {
-                setMode(item);
-                setState("idle");
+                setSource(item.value);
+                setManualState("idle");
+                setAdapterSignal({ state: "idle" });
               }}
             >
-              {item}
+              {item.label}
             </button>
           ))}
         </div>
@@ -326,27 +433,29 @@ export function OrbPlayground() {
 
       <section className="workbench__stage" aria-label="Voice orb demo">
         <div className="workbench__stage-meta" aria-hidden="true">
-          <span>Preview</span>
+          <span>state / {previewSignal.state}</span>
           <span>
             {theme}
-            {theme === "cloud" ? ` / ${cloudMode}` : ""}
+            {theme === "cloud" ? ` / ${cloudMode}` : ""} · in {inputLevel.toFixed(2)} · out{" "}
+            {outputLevel.toFixed(2)}
           </span>
         </div>
         <Orb
           theme={theme}
           cloudMode={cloudMode}
-          signal={mode === "controlled" ? controlledSignal : undefined}
-          adapter={mode === "adapter" ? adapter : undefined}
-          requestMicrophone={mode === "microphone"}
-          onStart={mode === "controlled" ? () => setState("listening") : undefined}
-          onStop={mode === "controlled" ? () => setState("idle") : undefined}
-          interactive={interactive}
+          signal={source === "manual" ? manualSignal : undefined}
+          adapter={source === "simulation" ? adapter : undefined}
+          requestMicrophone={source === "microphone"}
+          onStart={source === "manual" ? () => setManualState("listening") : undefined}
+          onStop={source === "manual" ? () => setManualState("idle") : undefined}
+          interactive={showCallControl}
           size={size}
           control={{
             position: controlPosition,
             appearance: controlAppearance,
             size: controlSize,
             gap: controlGap,
+            className: "playground-call-control",
           }}
           ballScale={ballScale}
           smokeScale={smokeScale}
@@ -359,18 +468,24 @@ export function OrbPlayground() {
             release,
           }}
           className={reducedMotion ? "voice-orb--reduced-motion" : undefined}
+          labels={{
+            start: "Start call",
+            stop: "End call",
+            retry: "Try again",
+          }}
           status={supportStatus}
           errorMessage={
-            mode === "controlled" && state === "error"
+            source === "manual" && manualState === "error"
               ? "The simulated connection failed. Choose another state or retry."
               : undefined
           }
         />
         <div className="workbench__readout" aria-label="Current component configuration">
-          <span>Current props</span>
-          <code>
-            {`<Orb theme="${theme}" state="${state}" scale="${selectedScale.name.toLowerCase()}" />`}
-          </code>
+          <span>Props</span>
+          <code>{codeExample}</code>
+          <button type="button" onClick={() => void copyCode()}>
+            {copied ? "Copied" : "Copy"}
+          </button>
         </div>
       </section>
 
@@ -385,13 +500,13 @@ export function OrbPlayground() {
           </button>
         </div>
 
-        {mode === "microphone" && (
+        {source === "microphone" && (
           <p className="inspector__note">
-            Microphone access is requested only after you press start.
+            Microphone access is requested only after you press Start call.
           </p>
         )}
 
-        <InspectorSection title="Appearance" note={`${theme} · ${selectedScale.name}`} open>
+        <InspectorSection title="Visuals" note={`${theme} · ${selectedScale.name}`} open>
           <label className="select-setting">
             <span>Theme</span>
             <select
@@ -400,21 +515,25 @@ export function OrbPlayground() {
               onChange={(event) => setTheme(event.target.value as OrbTheme)}
             >
               {THEMES.map((item) => (
-                <option key={item}>{item}</option>
+                <option key={item.value} value={item.value}>
+                  {item.label}
+                </option>
               ))}
             </select>
           </label>
           <label className="select-setting">
-            <span>Cloud mode</span>
+            <span>Cloud treatment</span>
             <select
-              aria-label="Cloud mode"
+              aria-label="Cloud treatment"
               value={cloudMode}
               disabled={theme !== "cloud"}
               onChange={(event) => setCloudMode(event.target.value as OrbCloudMode)}
             >
-              <option value="shell">Crystal shell</option>
-              <option value="gas">Rough gas</option>
-              <option value="vapor">Floating gas</option>
+              {CLOUD_MODES.map((item) => (
+                <option key={item.value} value={item.value}>
+                  {item.label}
+                </option>
+              ))}
             </select>
           </label>
           <Setting
@@ -427,8 +546,8 @@ export function OrbPlayground() {
             onChange={setSize}
           />
           <div className="palette-setting">
-            <span>Scale</span>
-            <div className="palette-list" aria-label="Visual scale">
+            <span>Color scale</span>
+            <div className="palette-list" aria-label="Color scale">
               {SCALE_OPTIONS.map((item, index) => (
                 <button
                   key={item.name}
@@ -437,6 +556,7 @@ export function OrbPlayground() {
                   style={{ "--swatch": item.swatch } as CSSProperties}
                   aria-label={`Use ${item.name} scale`}
                   aria-pressed={index === scaleIndex}
+                  title={item.name}
                   onClick={() => setScaleIndex(index)}
                 >
                   <span aria-hidden="true" />
@@ -445,7 +565,7 @@ export function OrbPlayground() {
             </div>
           </div>
           <Setting
-            label="Cloud shell"
+            label="Shell scale"
             value={ballScale}
             displayValue={`${ballScale.toFixed(2)}×`}
             min={0.7}
@@ -455,7 +575,7 @@ export function OrbPlayground() {
             onChange={setBallScale}
           />
           <Setting
-            label="Cloud fill"
+            label="Vapor scale"
             value={smokeScale}
             displayValue={`${smokeScale.toFixed(2)}×`}
             min={0.5}
@@ -466,66 +586,73 @@ export function OrbPlayground() {
           />
         </InspectorSection>
 
-        <InspectorSection title="Signal" note={mode} open>
-          <div className="state-grid" aria-label="Controlled state">
-            {STATES.map((item) => (
-              <button
-                type="button"
-                key={item}
-                aria-pressed={state === item}
-                className={state === item ? "is-active" : ""}
-                disabled={mode !== "controlled"}
-                onClick={() => setState(item)}
-              >
-                {item}
-              </button>
-            ))}
-          </div>
-          <Setting
-            label="Input volume"
-            value={inputVolume}
-            displayValue={inputVolume.toFixed(2)}
-            min={0}
-            max={1.1}
-            step={0.01}
-            disabled={mode !== "controlled"}
-            onChange={setInputVolume}
-          />
-          <Setting
-            label="Output volume"
-            value={outputVolume}
-            displayValue={outputVolume.toFixed(2)}
-            min={0}
-            max={1}
-            step={0.01}
-            disabled={mode !== "controlled"}
-            onChange={setOutputVolume}
-          />
+        <InspectorSection title="Signal" note={sourceLabel} open>
+          {source === "manual" ? (
+            <>
+              <div className="state-grid" aria-label="Signal state">
+                {STATES.map((item) => (
+                  <button
+                    type="button"
+                    key={item.value}
+                    aria-pressed={manualState === item.value}
+                    className={manualState === item.value ? "is-active" : ""}
+                    onClick={() => setManualState(item.value)}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+              <Setting
+                label="Input level"
+                value={inputVolume}
+                displayValue={inputVolume.toFixed(2)}
+                min={0}
+                max={1}
+                step={0.01}
+                onChange={setInputVolume}
+              />
+              <Setting
+                label="Output level"
+                value={outputVolume}
+                displayValue={outputVolume.toFixed(2)}
+                min={0}
+                max={1}
+                step={0.01}
+                onChange={setOutputVolume}
+              />
+            </>
+          ) : (
+            <p className="inspector__source-note">
+              {source === "simulation"
+                ? "Start the call to exercise connecting, listening, thinking, and speaking with live synthetic levels."
+                : "Start the call to drive the listening state from your browser microphone."}
+            </p>
+          )}
         </InspectorSection>
 
-        <InspectorSection title="Session control" note={interactive ? controlAppearance : "hidden"}>
+        <InspectorSection title="Call button" note={showCallControl ? controlAppearance : "hidden"}>
           <label className="toggle">
             <span>
-              <span>Interactive</span>
-              <small>Render the session control when a lifecycle exists</small>
+              <span>Show button</span>
+              <small>Render a start, end, or retry action when one is available</small>
             </span>
             <input
               type="checkbox"
-              checked={interactive}
-              onChange={(event) => setInteractive(event.target.checked)}
+              checked={showCallControl}
+              onChange={(event) => setShowCallControl(event.target.checked)}
             />
           </label>
           <label className="select-setting">
             <span>Position</span>
             <select
-              aria-label="Button position"
+              aria-label="Call button position"
               value={controlPosition}
-              disabled={!interactive}
+              disabled={!showCallControl}
               onChange={(event) => setControlPosition(event.target.value as OrbControlPosition)}
             >
               {CONTROL_POSITIONS.map((item) => (
-                <option key={item} value={item}>
-                  {item.replaceAll("-", " ")}
+                <option key={item.value} value={item.value}>
+                  {item.label}
                 </option>
               ))}
             </select>
@@ -533,41 +660,43 @@ export function OrbPlayground() {
           <label className="select-setting">
             <span>Appearance</span>
             <select
-              aria-label="Button style"
+              aria-label="Call button appearance"
               value={controlAppearance}
-              disabled={!interactive}
+              disabled={!showCallControl}
               onChange={(event) => setControlAppearance(event.target.value as OrbControlAppearance)}
             >
               {CONTROL_APPEARANCES.map((item) => (
-                <option key={item}>{item}</option>
+                <option key={item.value} value={item.value}>
+                  {item.label}
+                </option>
               ))}
             </select>
           </label>
           <Setting
-            label="Button size"
+            label="Button height"
             value={controlSize}
             displayValue={`${controlSize}px`}
             min={32}
-            max={112}
+            max={72}
             step={2}
-            disabled={!interactive}
+            disabled={!showCallControl}
             onChange={setControlSize}
           />
           <Setting
-            label="Button gap"
+            label="Gap from orb"
             value={controlGap}
             displayValue={`${controlGap}px`}
             min={0}
             max={72}
             step={2}
-            disabled={!interactive}
+            disabled={!showCallControl}
             onChange={setControlGap}
           />
         </InspectorSection>
 
         <InspectorSection title="Motion" note={reducedMotion ? "reduced" : `${speed.toFixed(1)}×`}>
           <Setting
-            label="Motion"
+            label="Speed"
             value={speed}
             displayValue={`${speed.toFixed(1)}×`}
             min={0}
@@ -576,7 +705,7 @@ export function OrbPlayground() {
             onChange={setSpeed}
           />
           <Setting
-            label="Intensity"
+            label="Motion intensity"
             value={intensity}
             displayValue={`${intensity.toFixed(1)}×`}
             min={0.5}
@@ -585,7 +714,7 @@ export function OrbPlayground() {
             onChange={setIntensity}
           />
           <Setting
-            label="Sensitivity"
+            label="Audio sensitivity"
             value={sensitivity}
             displayValue={`${sensitivity.toFixed(1)}×`}
             min={0.5}
@@ -594,7 +723,7 @@ export function OrbPlayground() {
             onChange={setSensitivity}
           />
           <Setting
-            label="Attack"
+            label="Attack smoothing"
             value={attack}
             displayValue={attack.toFixed(2)}
             min={0.05}
@@ -603,7 +732,7 @@ export function OrbPlayground() {
             onChange={setAttack}
           />
           <Setting
-            label="Release"
+            label="Release smoothing"
             value={release}
             displayValue={release.toFixed(2)}
             min={0.05}
@@ -613,8 +742,8 @@ export function OrbPlayground() {
           />
           <label className="toggle">
             <span>
-              <span>Reduced-motion preview</span>
-              <small>Freeze decorative movement and UI transitions</small>
+              <span>Reduce motion</span>
+              <small>Freeze decorative movement in this preview</small>
             </span>
             <input
               type="checkbox"

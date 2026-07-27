@@ -83,7 +83,7 @@
 
 .mode-tabs {
   display: grid;
-  width: min(100%, 17rem);
+  width: min(100%, 20rem);
   padding: 0;
   border: 0;
   border-radius: 999px;
@@ -99,7 +99,6 @@
   background: transparent;
   color: var(--site-faint);
   font-size: 0.58rem;
-  text-transform: capitalize;
   cursor: pointer;
 }
 
@@ -159,6 +158,78 @@
   z-index: 1;
 }
 
+.workbench__stage .playground-call-control {
+  width: auto;
+  min-width: 7.75rem;
+  padding: 0 1rem;
+  border-color: rgb(238 237 233 / 0.16);
+  grid-auto-flow: column;
+  gap: 0.55rem;
+  background: #151514;
+  box-shadow: 0 0.65rem 1.8rem rgb(0 0 0 / 0.32);
+  color: #e4e3dd;
+  font-size: 0.61rem;
+  font-weight: 560;
+  letter-spacing: 0.01em;
+  backdrop-filter: none;
+}
+
+.workbench__stage .playground-call-control::after {
+  content: "Start call";
+  white-space: nowrap;
+}
+
+.workbench__stage .playground-call-control[data-mode="end"]::after {
+  content: "End call";
+}
+
+.workbench__stage .playground-call-control[data-mode="retry"]::after {
+  content: "Try again";
+}
+
+.workbench__stage .playground-call-control[data-appearance="minimal"] {
+  border-color: rgb(238 237 233 / 0.14);
+  background: #111110;
+  box-shadow: none;
+}
+
+.workbench__stage .playground-call-control[data-appearance="glass"] {
+  border-color: rgb(238 237 233 / 0.18);
+  background: rgb(20 20 19 / 0.76);
+  box-shadow: 0 0.65rem 1.8rem rgb(0 0 0 / 0.32);
+  backdrop-filter: blur(10px);
+}
+
+.workbench__stage .playground-call-control[data-appearance="solid"] {
+  border-color: #343431;
+  background: #e3e2dc;
+  box-shadow: 0 0.65rem 1.8rem rgb(0 0 0 / 0.38);
+  color: #111110;
+}
+
+.workbench__stage .playground-call-control[data-mode="end"] {
+  border-color: rgb(255 142 131 / 0.28);
+  background: #211312;
+  color: #ffaaa2;
+}
+
+.workbench__stage .playground-call-control:hover:not(:disabled) {
+  border-color: rgb(238 237 233 / 0.28);
+  background: #1c1c1a;
+  box-shadow: 0 0.75rem 2rem rgb(0 0 0 / 0.36);
+  transform: translateY(-1px);
+}
+
+.workbench__stage .playground-call-control[data-mode="end"]:hover:not(:disabled) {
+  border-color: rgb(255 142 131 / 0.38);
+  background: #2a1715;
+}
+
+.workbench__stage .playground-call-control .voice-orb__icon {
+  width: 0.9rem;
+  height: 0.9rem;
+}
+
 .workbench__stage-meta {
   position: absolute;
   z-index: 2;
@@ -201,13 +272,32 @@
 }
 
 .workbench__readout code {
+  flex: 1;
   min-width: 0;
   color: #aaa9a4;
   font-family: "SFMono-Regular", Consolas, monospace;
   font-size: 0.56rem;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  overflow-x: auto;
+  scrollbar-width: none;
   white-space: nowrap;
+}
+
+.workbench__readout code::-webkit-scrollbar {
+  display: none;
+}
+
+.workbench__readout button {
+  flex: none;
+  padding: 0.3rem 0.1rem 0.3rem 0.55rem;
+  border: 0;
+  background: transparent;
+  color: var(--site-muted);
+  font-size: 0.56rem;
+  cursor: pointer;
+}
+
+.workbench__readout button:hover {
+  color: var(--site-text);
 }
 
 .inspector {
@@ -264,6 +354,15 @@
   color: var(--site-muted);
   font-size: 0.62rem;
   line-height: 1.5;
+}
+
+.inspector__source-note {
+  margin: 0;
+  padding-left: 0.75rem;
+  border-left: 1px solid rgb(169 183 245 / 0.28);
+  color: var(--site-faint);
+  font-size: 0.58rem;
+  line-height: 1.55;
 }
 
 .inspector-section {
@@ -483,6 +582,7 @@
 }
 
 .mode-tabs button:focus-visible,
+.workbench__readout button:focus-visible,
 .inspector summary:focus-visible,
 .inspector button:focus-visible,
 .inspector select:focus-visible,

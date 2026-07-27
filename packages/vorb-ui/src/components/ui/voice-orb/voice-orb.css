@@ -1057,10 +1057,21 @@
 
 .voice-orb__canvas {
   position: absolute;
+  z-index: 0;
   inset: 0;
   display: block;
   width: 100%;
   height: 100%;
+  border-radius: inherit;
+  background: transparent;
+  opacity: 0;
+  transition: opacity 180ms ease-out;
+}
+
+.voice-orb__canvas-fallback {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
   border-radius: inherit;
   background:
     radial-gradient(
@@ -1078,11 +1089,17 @@
     );
   filter: drop-shadow(0 0 2.5rem rgb(0 0 0 / 0.48));
   mask-image: radial-gradient(circle, #000 0 58%, rgb(0 0 0 / 0.82) 74%, transparent 100%);
+  opacity: 1;
+  pointer-events: none;
+  transition: opacity 180ms ease-out;
 }
 
 .voice-orb__canvas--ready {
-  background: transparent;
-  mask-image: none;
+  opacity: 1;
+}
+
+.voice-orb__canvas--ready + .voice-orb__canvas-fallback {
+  opacity: 0;
 }
 
 .voice-orb--cloud[data-cloud-mode="gas"] .voice-orb__visual::after,
@@ -1096,18 +1113,20 @@
   opacity: 0;
 }
 
-.voice-orb--cloud[data-cloud-mode="gas"] .voice-orb__canvas {
+.voice-orb--cloud[data-cloud-mode="gas"] .voice-orb__canvas,
+.voice-orb--cloud[data-cloud-mode="gas"] .voice-orb__canvas-fallback {
   filter: brightness(1.38) saturate(1.16)
     drop-shadow(0 0 1.6rem color-mix(in srgb, var(--voice-orb-tone-base) 34%, transparent));
 }
 
-.voice-orb--cloud[data-cloud-mode="vapor"] .voice-orb__canvas {
+.voice-orb--cloud[data-cloud-mode="vapor"] .voice-orb__canvas,
+.voice-orb--cloud[data-cloud-mode="vapor"] .voice-orb__canvas-fallback {
   filter: brightness(1.28) saturate(1.08)
     drop-shadow(0 0 1.9rem color-mix(in srgb, var(--voice-orb-tone-base) 26%, transparent));
 }
 
-.voice-orb--cloud[data-cloud-mode="gas"] .voice-orb__canvas:not(.voice-orb__canvas--ready),
-.voice-orb--cloud[data-cloud-mode="vapor"] .voice-orb__canvas:not(.voice-orb__canvas--ready) {
+.voice-orb--cloud[data-cloud-mode="gas"] .voice-orb__canvas-fallback,
+.voice-orb--cloud[data-cloud-mode="vapor"] .voice-orb__canvas-fallback {
   background:
     radial-gradient(
       ellipse at 36% 42%,
@@ -1415,6 +1434,8 @@
   }
 
   .voice-orb__visual,
+  .voice-orb__canvas,
+  .voice-orb__canvas-fallback,
   .voice-orb__control {
     transition: none;
   }
@@ -1429,6 +1450,8 @@
 }
 
 .voice-orb--reduced-motion .voice-orb__visual,
+.voice-orb--reduced-motion .voice-orb__canvas,
+.voice-orb--reduced-motion .voice-orb__canvas-fallback,
 .voice-orb--reduced-motion .voice-orb__control {
   transition: none;
 }

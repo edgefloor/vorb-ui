@@ -616,6 +616,7 @@ export const VoiceOrb = forwardRef<HTMLDivElement, VoiceOrbProps>(function Voice
             data-cloud-surface=""
             className={cn("voice-orb__canvas", webglReady && "voice-orb__canvas--ready")}
           />
+          <div className="voice-orb__canvas-fallback" />
         </>
       ) : (
         <MagicalThemeVisual

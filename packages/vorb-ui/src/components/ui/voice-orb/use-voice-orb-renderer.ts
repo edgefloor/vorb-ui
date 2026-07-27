@@ -349,6 +349,7 @@ export function useVoiceOrbRenderer({
     let frame = 0;
     let stopped = false;
     let contextLost = false;
+    let firstFrameDrawn = false;
     let lastTime = 0;
     let reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -537,12 +538,17 @@ export function useVoiceOrbRenderer({
       gl.uniform3f(uniforms.stateB, runtime.speaking, runtime.connecting, runtime.error);
       gl.uniform1f(uniforms.unavailable, runtime.unavailable);
       gl.drawArrays(gl.TRIANGLES, 0, 6);
+      if (!firstFrameDrawn) {
+        firstFrameDrawn = true;
+        setWebglReady(true);
+      }
     };
 
     const setup = () => {
       if (stopped) return;
+      setWebglReady(false);
+      firstFrameDrawn = false;
       renderer = createRenderer(canvas);
-      setWebglReady(Boolean(renderer));
       if (!renderer) return;
       contextLost = false;
       resize();

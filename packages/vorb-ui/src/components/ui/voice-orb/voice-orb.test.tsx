@@ -369,7 +369,10 @@ describe("VoiceOrb", () => {
   it("keeps the CSS fallback and status usable without WebGL", () => {
     const view = render(<VoiceOrb state="idle" theme="cloud" onStart={() => undefined} />);
     const canvas = view.container.querySelector("canvas");
+    const fallback = view.container.querySelector(".voice-orb__canvas-fallback");
     expect(canvas?.classList.contains("voice-orb__canvas--ready")).toBe(false);
+    expect(fallback).toBeTruthy();
+    expect(canvas?.nextElementSibling).toBe(fallback);
     expect(view.getByText("Ready")).toBeTruthy();
     expect(view.getByRole("button")).toBeTruthy();
   });

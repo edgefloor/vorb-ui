@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { HeroOrb } from "@/components/landing-orbs";
+import { CloudMarquee, HeroOrb } from "@/components/landing-orbs";
 
 const FEATURES = [
   ["Signal", "One normalized shape for state, input volume, output volume, and errors."],
@@ -43,6 +43,8 @@ export default function HomePage() {
         </div>
         <HeroOrb />
       </section>
+
+      <CloudMarquee />
 
       <section className="section architecture" id="api">
         <div className="section-heading">

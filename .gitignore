@@ -3,6 +3,7 @@ node_modules/
 dist/
 demo-dist/
 .next/
+out/
 .source/
 coverage/
 playwright-report/

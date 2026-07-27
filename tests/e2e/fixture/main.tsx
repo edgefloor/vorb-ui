@@ -56,7 +56,7 @@ function App() {
 
   return (
     <main>
-      <h1>Magical Orb UI built consumer</h1>
+      <h1>vorb-ui built consumer</h1>
       <p data-testid="adapter-exports">{adapterExportsReady ? "ready" : "missing"}</p>
 
       <section aria-label="Adapter lifecycle">

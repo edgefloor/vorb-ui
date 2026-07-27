@@ -45,4 +45,4 @@ export function VoiceStatus() {
 }
 ```
 
-See the [package README](./packages/vorb-ui/README.md) for the complete component and adapter surface.
+See the [package README](./packages/vorb-ui/README.md) for installation and package entrypoints.

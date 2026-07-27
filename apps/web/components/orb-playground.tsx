@@ -2,190 +2,25 @@
 
 import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from "react";
 import {
-  ORB_SCALES,
   Orb,
-  type OrbAdapter,
   type OrbCloudMode,
   type OrbControlAppearance,
   type OrbControlPosition,
-  type OrbScale,
   type OrbSignal,
   type OrbState,
   type OrbTheme,
 } from "vorb-ui";
-
-const STATES: Array<{ value: OrbState; label: string }> = [
-  { value: "idle", label: "Idle" },
-  { value: "connecting", label: "Connecting" },
-  { value: "listening", label: "Listening" },
-  { value: "thinking", label: "Thinking" },
-  { value: "speaking", label: "Speaking" },
-  { value: "error", label: "Error" },
-];
-const THEMES: Array<{ value: OrbTheme; label: string }> = [
-  { value: "radial", label: "Radial" },
-  { value: "cloud", label: "Cloud" },
-  { value: "circle", label: "Circle" },
-  { value: "bars", label: "Bars" },
-  { value: "debug", label: "Debug" },
-];
-const CLOUD_MODES: Array<{ value: OrbCloudMode; label: string }> = [
-  { value: "shell", label: "Shell" },
-  { value: "gas", label: "Gas" },
-  { value: "vapor", label: "Vapor" },
-];
-const CONTROL_POSITIONS: Array<{ value: OrbControlPosition; label: string }> = [
-  { value: "bottom", label: "Below" },
-  { value: "top", label: "Above" },
-  { value: "overlay-bottom", label: "Overlay bottom" },
-  { value: "overlay-center", label: "Overlay center" },
-  { value: "overlay-top", label: "Overlay top" },
-];
-const CONTROL_APPEARANCES: Array<{ value: OrbControlAppearance; label: string }> = [
-  { value: "minimal", label: "Minimal" },
-  { value: "glass", label: "Glass" },
-  { value: "solid", label: "Solid" },
-];
-
-type SignalSource = "manual" | "simulation" | "microphone";
-
-const SIGNAL_SOURCES: Array<{ value: SignalSource; label: string }> = [
-  { value: "manual", label: "Manual" },
-  { value: "simulation", label: "Simulated call" },
-  { value: "microphone", label: "Microphone" },
-];
-
-const CUSTOM_SCALE: OrbScale = {
-  base: "crystal",
-  colors: {
-    main: {
-      deepest: "#171126",
-      deep: "#3d245e",
-      base: "#7860c7",
-      bright: "#9ee8dc",
-      lightest: "#f5f2ff",
-    },
-  },
-  states: {
-    listening: { audioResponse: 0.95 },
-    speaking: { glowIntensity: 1, expansion: 0.82 },
-  },
-};
-
-const SCALE_OPTIONS: Array<{
-  name: string;
-  code: string;
-  scale: OrbScale;
-  swatch: string;
-}> = [
-  {
-    name: ORB_SCALES.crystal.label,
-    code: '"crystal"',
-    scale: "crystal",
-    swatch: ORB_SCALES.crystal.colors.main.base,
-  },
-  {
-    name: ORB_SCALES.ember.label,
-    code: '"ember"',
-    scale: "ember",
-    swatch: ORB_SCALES.ember.colors.main.base,
-  },
-  {
-    name: ORB_SCALES.iris.label,
-    code: '"iris"',
-    scale: "iris",
-    swatch: ORB_SCALES.iris.colors.main.base,
-  },
-  {
-    name: ORB_SCALES.lagoon.label,
-    code: '"lagoon"',
-    scale: "lagoon",
-    swatch: ORB_SCALES.lagoon.colors.main.base,
-  },
-  {
-    name: "Custom",
-    code: "{ customScale }",
-    scale: CUSTOM_SCALE,
-    swatch: "#7860c7",
-  },
-];
-
-class DemoVoiceAdapter implements OrbAdapter {
-  private listeners = new Set<(signal: OrbSignal) => void>();
-  private signal: OrbSignal = { state: "idle" };
-  private connectTimer = 0;
-  private animationTimer = 0;
-  private startedAt = 0;
-
-  subscribe(listener: (signal: OrbSignal) => void) {
-    this.listeners.add(listener);
-    listener(this.signal);
-    return () => this.listeners.delete(listener);
-  }
-
-  start = async () => {
-    this.clearTimers();
-    this.emit({ state: "connecting" });
-    this.connectTimer = window.setTimeout(() => {
-      this.startedAt = performance.now();
-      this.tick();
-    }, 650);
-  };
-
-  stop = async () => {
-    this.clearTimers();
-    this.emit({ state: "idle" });
-  };
-
-  private tick = () => {
-    const elapsed = performance.now() - this.startedAt;
-    const cycle = elapsed % 7600;
-    if (cycle < 3100) {
-      this.emit({
-        state: "listening",
-        inputVolume: this.simulatedVolume(cycle, 3100, "listening"),
-      });
-    } else if (cycle < 4550) {
-      this.emit({ state: "thinking" });
-    } else {
-      this.emit({
-        state: "speaking",
-        outputVolume: this.simulatedVolume(cycle - 4550, 3050, "speaking"),
-      });
-    }
-    this.animationTimer = window.requestAnimationFrame(this.tick);
-  };
-
-  private simulatedVolume(elapsed: number, duration: number, role: "listening" | "speaking") {
-    const seconds = elapsed / 1000;
-    const envelope = Math.min(1, elapsed / 220, Math.max(0, duration - elapsed) / 220);
-    const voice =
-      role === "listening"
-        ? 0.25 +
-          Math.sin(seconds * 7.7) * 0.09 +
-          Math.sin(seconds * 13.1 + 0.8) * 0.06 +
-          Math.sin(seconds * 21.2) * 0.035
-        : 0.5 +
-          Math.sin(seconds * 8.4) * 0.17 +
-          Math.sin(seconds * 15.6 + 1.2) * 0.1 +
-          Math.sin(seconds * 25.2) * 0.05;
-    const minimum = role === "listening" ? 0.025 : 0.05;
-    const maximum = role === "listening" ? 0.6 : 0.92;
-    return Math.min(maximum, Math.max(minimum, voice * envelope));
-  }
-
-  private emit(signal: OrbSignal) {
-    this.signal = signal;
-    this.listeners.forEach((listener) => listener(signal));
-  }
-
-  private clearTimers() {
-    window.clearTimeout(this.connectTimer);
-    window.cancelAnimationFrame(this.animationTimer);
-    this.connectTimer = 0;
-    this.animationTimer = 0;
-  }
-}
+import { DemoVoiceAdapter } from "./orb-playground/demo-voice-adapter";
+import {
+  CLOUD_MODES,
+  CONTROL_APPEARANCES,
+  CONTROL_POSITIONS,
+  SCALE_OPTIONS,
+  SIGNAL_SOURCES,
+  STATES,
+  THEMES,
+  type SignalSource,
+} from "./orb-playground/options";
 
 function Setting({
   label,
@@ -431,7 +266,7 @@ export function OrbPlayground() {
         </div>
       </header>
 
-      <section className="workbench__stage" aria-label="Voice orb demo">
+      <section className="workbench__stage" aria-label="Orb demo">
         <div className="workbench__stage-meta" aria-hidden="true">
           <span>state / {previewSignal.state}</span>
           <span>
@@ -489,7 +324,7 @@ export function OrbPlayground() {
         </div>
       </section>
 
-      <aside className="inspector" id="api" aria-label="Voice orb settings">
+      <aside className="inspector" id="api" aria-label="Orb settings">
         <div className="inspector__heading">
           <div>
             <p>Inspector</p>

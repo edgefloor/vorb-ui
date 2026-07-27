@@ -6,4 +6,3 @@ coverage
 test-results
 playwright-report
 *.tsbuildinfo
-voice-orb-prototype.html

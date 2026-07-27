@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { OrbPlayground } from "@/components/orb-playground";
-import "@/app/playground/playground.css";
+import "@/components/orb-playground/orb-playground.css";
 
 export const metadata: Metadata = {
   title: "Playground",

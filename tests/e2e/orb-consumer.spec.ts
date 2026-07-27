@@ -16,7 +16,7 @@ test("loads the built package and every theme/state combination", async ({ page 
   const browserErrors = collectBrowserErrors(page);
   await page.goto("/");
 
-  await expect(page.getByRole("heading", { name: "Magical Orb UI built consumer" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "vorb-ui built consumer" })).toBeVisible();
   await expect(page.getByTestId("adapter-exports")).toHaveText("ready");
 
   for (const theme of THEMES) {

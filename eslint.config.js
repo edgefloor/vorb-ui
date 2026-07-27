@@ -16,7 +16,6 @@ export default [
       "test-results/**",
       "playwright-report/**",
       "*.tsbuildinfo",
-      "vite.config.js",
     ],
   },
   js.configs.recommended,

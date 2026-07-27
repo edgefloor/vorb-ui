@@ -1,1 +1,1 @@
-export * from "./components/ui/voice-orb";
+export * from "./orb";

@@ -1,14 +1,12 @@
 import type { BaseLayoutProps } from "fumadocs-ui/layouts/shared";
+import { BrandContent } from "@/components/brand-mark";
 
 export function baseOptions(): BaseLayoutProps {
   return {
     nav: {
       title: (
         <span className="brand-mark">
-          <span className="brand-mark__glyph" aria-hidden="true">
-            v
-          </span>
-          <span>vorb-ui</span>
+          <BrandContent />
         </span>
       ),
       url: "/",

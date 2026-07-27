@@ -8,11 +8,6 @@
     "outDir": "dist",
     "tsBuildInfoFile": "node_modules/.cache/vorb-ui-lib.tsbuildinfo"
   },
-  "include": [
-    "src/index.ts",
-    "src/adapters/**/*.ts",
-    "src/components/ui/voice-orb/**/*.ts",
-    "src/components/ui/voice-orb/**/*.tsx"
-  ],
+  "include": ["src/index.ts", "src/adapters/**/*.ts", "src/orb/**/*.ts", "src/orb/**/*.tsx"],
   "exclude": ["src/**/*.test.ts", "src/**/*.test.tsx"]
 }

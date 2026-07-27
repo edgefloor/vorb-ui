@@ -18,11 +18,12 @@
     "typecheck:package": "bun run --cwd packages/vorb-ui typecheck:package",
     "test:package": "bun run --cwd packages/vorb-ui test:package",
     "typecheck:e2e": "tsc -p tests/e2e/tsconfig.json --noEmit",
-    "test:e2e:built": "bun run build:package && bun run typecheck:e2e && playwright test",
+    "test:e2e": "bun run typecheck:e2e && playwright test",
+    "test:e2e:built": "bun run build:package && bun run test:e2e",
     "format": "prettier . --write",
     "format:check": "prettier . --check",
     "lint": "eslint .",
-    "check": "bun run format:check && bun run lint && bun run typecheck && bun run test && bun run build && bun run typecheck:package && bun run test:package && bun run test:e2e:built"
+    "check": "bun run format:check && bun run lint && bun run typecheck && bun run test && bun run build && bun run typecheck:package && bun run test:package && bun run test:e2e"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.0",

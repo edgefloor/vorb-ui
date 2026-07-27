@@ -1,6 +1,1 @@
-export type {
-  OrbAdapter,
-  OrbSignal,
-  OrbSignalListener,
-  OrbState,
-} from "../components/ui/voice-orb/voice-orb.types";
+export type { OrbAdapter, OrbSignal, OrbSignalListener, OrbState } from "../orb/types";

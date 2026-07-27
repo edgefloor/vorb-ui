@@ -1,0 +1,44 @@
+---
+title: Providers
+description: Keep provider SDK events behind one small adapter interface.
+---
+
+An adapter owns the session lifecycle and emits normalized vorb-ui signals:
+
+```ts
+type OrbAdapter = {
+  subscribe(listener: (signal: OrbSignal) => void): () => void;
+  start?: () => void | Promise<void>;
+  stop?: () => void | Promise<void>;
+};
+```
+
+## Included adapters
+
+Import provider factories from `vorb-ui/adapters`:
+
+- Vapi
+- ElevenLabs
+- OpenAI Realtime
+- Gemini Live
+- Pipecat
+- LiveKit
+
+The browser-ready LiveKit adapter also has a dedicated `vorb-ui/adapters/livekit` export.
+
+## Why the seam matters
+
+Provider SDKs disagree about event names, audio levels, interruption behavior, and teardown. vorb-ui
+normalizes those differences before rendering, so switching providers does not force a rewrite of
+the visible component.
+
+## External controls
+
+You can use the adapter while keeping lifecycle controls elsewhere:
+
+```tsx
+<Orb adapter={adapter} interactive={false} />
+
+<button onClick={() => adapter.start?.()}>Start</button>
+<button onClick={() => adapter.stop?.()}>Stop</button>
+```

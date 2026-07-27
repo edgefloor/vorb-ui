@@ -1,0 +1,102 @@
+{
+  "name": "vorb-ui",
+  "version": "0.1.0",
+  "description": "A refined React voice-orb interface with customizable visual scales and provider adapters.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/edgefloor/vorb-ui.git",
+    "directory": "packages/vorb-ui"
+  },
+  "homepage": "https://github.com/edgefloor/vorb-ui#readme",
+  "bugs": {
+    "url": "https://github.com/edgefloor/vorb-ui/issues"
+  },
+  "type": "module",
+  "main": "./dist/vorb-ui.cjs",
+  "module": "./dist/vorb-ui.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/vorb-ui.js",
+      "require": "./dist/vorb-ui.cjs"
+    },
+    "./adapters": {
+      "types": "./dist/adapters/index.d.ts",
+      "import": "./dist/adapters.js",
+      "require": "./dist/adapters.cjs"
+    },
+    "./adapters/livekit": {
+      "types": "./dist/adapters/livekit/browser.d.ts",
+      "import": "./dist/livekit-adapter.js",
+      "require": "./dist/livekit-adapter.cjs"
+    }
+  },
+  "typesVersions": {
+    "*": {
+      "adapters": [
+        "./dist/adapters/index.d.ts"
+      ],
+      "adapters/livekit": [
+        "./dist/adapters/livekit/browser.d.ts"
+      ]
+    }
+  },
+  "scripts": {
+    "build": "bun run typecheck && vite build && tsc -p tsconfig.lib.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "typecheck:package": "tsc -p tests/package-typecheck/tsconfig.json --noEmit",
+    "test": "vitest run",
+    "test:package": "node tests/package-smoke.mjs"
+  },
+  "peerDependencies": {
+    "livekit-client": ">=2.20.0 <3",
+    "react": ">=18.0.0",
+    "react-dom": ">=18.0.0"
+  },
+  "peerDependenciesMeta": {
+    "livekit-client": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@testing-library/react": "^16.3.0",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "@vitejs/plugin-react": "^4.3.4",
+    "jsdom": "^26.1.0",
+    "livekit-client": "2.20.0",
+    "react": "19.2.0",
+    "react-dom": "19.2.0",
+    "typescript": "~5.9.3",
+    "vite": "^6.0.5",
+    "vite-plugin-css-injected-by-js": "^5.0.2",
+    "vite-plugin-dts": "^5.0.3",
+    "vitest": "^3.2.4"
+  },
+  "keywords": [
+    "voice",
+    "voice-ui",
+    "voice-agent",
+    "voice-ai",
+    "react",
+    "orb",
+    "realtime-voice",
+    "vapi",
+    "elevenlabs",
+    "livekit",
+    "pipecat",
+    "openai-realtime",
+    "gemini-live"
+  ],
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
+  "sideEffects": [
+    "**/*.css"
+  ]
+}

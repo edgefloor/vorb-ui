@@ -1,0 +1,8 @@
+dist
+demo-dist
+node_modules
+coverage
+test-results
+playwright-report
+*.tsbuildinfo
+voice-orb-prototype.html

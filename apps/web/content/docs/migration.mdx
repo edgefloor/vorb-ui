@@ -1,0 +1,31 @@
+---
+title: Migrate from orb-ui
+description: Adopt vorb-ui without rewriting an existing orb-ui integration.
+---
+
+vorb-ui preserves the familiar `Orb` component and the lifecycle concepts used by orb-ui. Start by
+changing the package installation while leaving your existing render site intact.
+
+## Compatibility path
+
+1. Replace the package dependency.
+2. Keep the existing `Orb` import.
+3. Verify your state values and normalized volume.
+4. Choose a vorb-ui theme.
+5. Move provider-specific event wiring into an adapter when convenient.
+
+Legacy `VoiceOrb` names remain exported as deprecated aliases, so migration can happen in small
+steps.
+
+```tsx
+import { VoiceOrb } from "vorb-ui";
+
+// Still supported. Prefer Orb for new code.
+<VoiceOrb state="listening" volume={0.4} />;
+```
+
+## Button behavior
+
+If the old UI renders its own call button, set `interactive={false}`. If vorb-ui should own the
+control, provide an adapter or `onStart` and `onStop` callbacks. The same control behavior applies
+to every visual theme.

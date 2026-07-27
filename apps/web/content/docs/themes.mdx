@@ -1,0 +1,41 @@
+---
+title: Themes
+description: Five renderers with independent geometry and motion.
+---
+
+Set the renderer with the `theme` prop:
+
+```tsx
+<Orb theme="circle" state="thinking" />
+```
+
+## Radial
+
+A soft luminous field. It reads well at large sizes without a visible shell.
+
+## Cloud
+
+Volumetric motion with three treatments:
+
+- `shell` — gas held inside a crystal boundary.
+- `gas` — rough, turbulent edges with no enclosing ball.
+- `vapor` — soft floating gas with a loose silhouette.
+
+```tsx
+<Orb theme="cloud" cloudMode="vapor" />
+```
+
+## Circle
+
+A particle topology that changes structure between lifecycle states. It is deliberately not a
+ring rotating around a fixed sphere.
+
+## Bars
+
+A restrained level display. Individual heights respond to voice energy while the baseline remains
+visually absent.
+
+## Debug
+
+A transparent state and volume readout for integration work. It is useful for verifying adapter
+events before tuning a visual theme.

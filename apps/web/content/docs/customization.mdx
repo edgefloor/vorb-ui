@@ -1,0 +1,61 @@
+---
+title: Customization
+description: Size, motion, color scales, and control placement.
+---
+
+## Size
+
+`size` accepts a number in pixels or any CSS size string.
+
+```tsx
+<Orb size={320} />
+<Orb size="min(28rem, 80vw)" />
+```
+
+## Motion
+
+Tune movement without reaching into renderer internals:
+
+```tsx
+<Orb
+  motion={{
+    speed: 0.8,
+    intensity: 1.1,
+    sensitivity: 1.25,
+    attack: 0.65,
+    release: 0.22,
+  }}
+/>
+```
+
+`attack` controls how quickly a visual rises toward a new volume. `release` controls how gently it
+settles afterward.
+
+## Session control
+
+The call control is the same system across every theme.
+
+```tsx
+<Orb
+  control={{
+    position: "overlay-bottom",
+    appearance: "minimal",
+    size: 52,
+    gap: 12,
+  }}
+/>
+```
+
+Positions are `bottom`, `top`, `overlay-bottom`, `overlay-center`, and `overlay-top`. Appearances
+are `glass`, `solid`, and `minimal`.
+
+## Color scales
+
+Use a built-in scale by name:
+
+```tsx
+<Orb scale="lagoon" />
+```
+
+The built-in scales are `crystal`, `ember`, `iris`, and `lagoon`. A custom scale can override the
+tone ramp and state behavior while inheriting the rest from a built-in base.

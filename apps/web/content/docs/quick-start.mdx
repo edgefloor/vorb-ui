@@ -1,0 +1,69 @@
+---
+title: Quick start
+description: Install vorb-ui and connect your first voice signal.
+---
+
+## Install
+
+```bash
+bun add vorb-ui
+```
+
+Then render the smallest useful version:
+
+```tsx
+import { Orb } from "vorb-ui";
+
+export function VoiceStatus() {
+  return <Orb state="thinking" theme="circle" size={240} interactive={false} />;
+}
+```
+
+## Controlled state
+
+Use `signal` when your application already owns the voice lifecycle.
+
+```tsx
+import { Orb, type OrbSignal } from "vorb-ui";
+
+const signal: OrbSignal = {
+  state: "listening",
+  inputVolume: 0.42,
+  outputVolume: 0,
+};
+
+export function Assistant() {
+  return <Orb signal={signal} theme="radial" size={280} interactive={false} />;
+}
+```
+
+`inputVolume` drives listening motion. `outputVolume` drives speaking motion. Both use normalized
+values from `0` to `1`.
+
+## Let vorb-ui own the control
+
+Provide lifecycle callbacks and leave `interactive` enabled:
+
+```tsx
+<Orb state={state} onStart={startSession} onStop={stopSession} theme="cloud" cloudMode="vapor" />
+```
+
+The button label, icon, disabled state, and action follow the current lifecycle. Use
+`interactive={false}` when controls live elsewhere.
+
+## Use an adapter
+
+Adapters translate provider events into the same signal shape:
+
+```tsx
+import { Orb } from "vorb-ui";
+import { createVapiAdapter } from "vorb-ui/adapters";
+
+const adapter = createVapiAdapter({ client });
+
+export function Assistant() {
+  return <Orb adapter={adapter} theme="circle" />;
+}
+```
+
+See [providers](/docs/providers) for the supported SDK seams.

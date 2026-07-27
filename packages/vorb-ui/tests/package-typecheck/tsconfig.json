@@ -1,0 +1,12 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "baseUrl": "../..",
+    "paths": {
+      "vorb-ui": ["dist/index.d.ts"],
+      "vorb-ui/adapters": ["dist/adapters/index.d.ts"],
+      "vorb-ui/adapters/livekit": ["dist/adapters/livekit/browser.d.ts"]
+    }
+  },
+  "include": ["consumer.tsx"]
+}

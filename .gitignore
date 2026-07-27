@@ -1,0 +1,10 @@
+.DS_Store
+node_modules/
+dist/
+demo-dist/
+.next/
+.source/
+coverage/
+playwright-report/
+test-results/
+*.tsbuildinfo

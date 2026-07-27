@@ -1,17 +1,24 @@
-# Voice Orb v2 Specification
+# Magical Orb UI Drop-in Replacement Specification
 
-Status: Implemented  
-Target: Source-owned React component for this Bun/Vite project  
-Reference: [`alexanderqchen/orb-ui` at `408547b`](https://github.com/alexanderqchen/orb-ui/tree/408547bc8b5a4aeee655fa1b19a452d3dbc2dcf9)  
+Status: Proposed v3 compatibility expansion
+
+Target: A distributable React library published as `vorb-ui`, preserving the
+upstream component contract plus the existing local playground
+
+Reference: [`alexanderqchen/orb-ui` at `408547b`](https://github.com/alexanderqchen/orb-ui/tree/408547bc8b5a4aeee655fa1b19a452d3dbc2dcf9)
+
 Reference inspected: 2026-07-27
 
 ## 1. Summary
 
-Voice Orb v2 is a provider-neutral, audio-reactive React component for realtime
-voice interfaces. It presents one polished Ember WebGL visual and a consistent
-six-state conversation model.
+Magical Orb UI is a provider-neutral, audio-reactive React library for realtime
+voice interfaces. It must be a consumer-compatible replacement for upstream
+`orb-ui` 0.7.0 while replacing its visual implementations with one coherent
+magical language: crystal, smoke, spectral light, runes, floating fragments,
+and deliberate living motion.
 
-The component must work in three integration modes:
+The library keeps one deep `Orb` module at the external seam. That module must
+work in three integration modes:
 
 1. **Controlled:** the application passes a normalized signal.
 2. **Adapter-backed:** a provider adapter publishes normalized signals and
@@ -19,44 +26,54 @@ The component must work in three integration modes:
 3. **Standalone microphone:** an explicitly enabled convenience mode requests
    microphone access and visualizes local input.
 
-The visual must not infer that an assistant is thinking or speaking merely
-because the user stopped talking. Conversation state comes from the application
-or adapter. This is the central logic change from the current prototype.
+Conversation state comes from the application or adapter. A visual must not
+infer that an assistant is thinking or speaking merely because the user stopped
+talking. Every provider adapter ends at the same normalized `OrbSignal`.
+
+Drop-in replacement means an existing upstream consumer can switch package
+resolution to this library and keep its imports, JSX, provider setup, and
+public type references unchanged. Magical extensions are additive and optional.
 
 ## 2. Goals
 
 - Provide one stable UI API independent of the voice provider.
-- Preserve the current Ember WebGL appearance and responsive call control.
+- Match the upstream `orb-ui` component and adapter surface under the `vorb-ui` package name.
+- Export `Orb`, the deprecated `VoiceOrb` aliases, all upstream core types, all
+  upstream provider adapter factories, and their public configuration types.
+- Accept all five upstream theme identifiers with the same default and
+  interaction semantics.
+- Build ESM, CommonJS, and declaration output suitable for package consumers.
+- Keep one consistent crystal-and-smoke visual language across every state.
 - Distinguish user input volume from assistant output volume.
 - Support both interactive and passive/status-only layouts.
 - Make all meaningful appearance and motion values adjustable.
 - Never request microphone permission implicitly.
-- Keep the component source-owned and easy to copy, shadcn-style.
+- Keep the implementation internally modular even when distributed as a
+  package.
 - Handle React Strict Mode, unmounting, async cancellation, WebGL failure, and
   externally owned streams correctly.
-- Provide enough seams for a second visual theme later without exposing a
-  premature public theme system.
+- Make the current visual customizable through maintained scales without
+  exposing shader-specific uniforms.
 
 ## 3. Non-goals
 
-- Publishing an npm package.
-- Shipping first-party Vapi, ElevenLabs, LiveKit, Pipecat, OpenAI, or Gemini
-  adapters in v2.
+- Acting as a voice-agent platform or hosting provider.
 - Owning provider authentication, tokens, WebRTC signaling, transcripts,
-  mute controls, or audio playback.
+  prompts, speech recognition, or agent business logic.
 - Automatically detecting `thinking` or `speaking` from microphone silence.
-- Shipping multiple visual themes before a second production-quality design
-  exists.
-- Matching the reference repository API byte-for-byte.
+- Pixel-matching upstream theme implementations.
+- Preserving upstream visual aesthetics; identifiers and behavior are
+  compatible, but every renderer is deliberately re-authored in the magical
+  visual language.
+- Guaranteeing compatibility with undocumented upstream internals.
 
 ## 4. State and signal model
 
 ```ts
-export type VoiceOrbState =
-  "idle" | "connecting" | "listening" | "thinking" | "speaking" | "error";
+export type OrbState = "idle" | "connecting" | "listening" | "thinking" | "speaking" | "error";
 
-export interface VoiceOrbSignal {
-  state: VoiceOrbState;
+export interface OrbSignal {
+  state: OrbState;
   /** Compatibility value when direction-specific levels are unavailable. */
   volume?: number;
   /** Normalized local/user level from 0–1. */
@@ -65,6 +82,11 @@ export interface VoiceOrbSignal {
   outputVolume?: number;
   error?: unknown;
 }
+
+/** @deprecated Use OrbState. */
+export type VoiceOrbState = OrbState;
+/** @deprecated Use OrbSignal. */
+export type VoiceOrbSignal = OrbSignal;
 ```
 
 All volume inputs are clamped to `0–1`. Non-finite values become `0`.
@@ -91,33 +113,40 @@ state chooses the direction that drives the visual.
 
 ## 5. State behavior
 
-| State        | Meaning                  | Visual behavior                                                    | Primary action |
-| ------------ | ------------------------ | ------------------------------------------------------------------ | -------------- |
-| `idle`       | Available, not recording | Nearly full smoke rests inside stable glass with quiet drift       | Start          |
-| `connecting` | Session is starting      | Smoke contracts while pigment gathers into a central rising plume  | Disabled       |
-| `listening`  | User owns the turn       | A contained smoke mass draws gently toward an input-reactive focus | Stop           |
-| `thinking`   | Agent is processing      | Two medium smoke masses fold past one another without spinning     | Stop           |
-| `speaking`   | Assistant owns the turn  | Smoke expands as output releases soft pressure from a low source   | Stop           |
-| `error`      | Session or media failed  | Contracted smoke loses coherence across a muted fracture           | Retry          |
+| State        | Meaning                  | Visual behavior                                                  | Primary action |
+| ------------ | ------------------------ | ---------------------------------------------------------------- | -------------- |
+| `idle`       | Available, not recording | Low-energy smoke circulates and settles inside stable glass      | Start          |
+| `connecting` | Session is starting      | Boundary strands gather toward a stable continuous pathway       | Disabled       |
+| `listening`  | User owns the turn       | Phrase waves travel inward from the lower-front surface          | Stop           |
+| `thinking`   | Agent is processing      | Coordinated local vortices split, exchange wisps, and reconnect  | Stop           |
+| `speaking`   | Assistant owns the turn  | An organized stream carries phrase waves from the center outward | Stop           |
+| `error`      | Session or media failed  | Smoke stutters once around a localized warm fracture-like flare  | Retry          |
 
 Visual differences must not be the only state signal. When `showStatus` is
 enabled, readable status text is always present.
 
 The crystal shell remains stable across all states. Audio activity may change
-smoke flow speed, reach, density, and local brightness, but it must not produce
-whole-orb pulsing, hard radial flashes, or reveal the procedural field.
-Listening and speaking use independently smoothed input and output envelopes.
+the strength and reach of the directional intake/output stream, but it must not
+resize the smoke envelope, change global animation speed, produce whole-orb
+pulsing, or flash the lighting. Listening and speaking use independently
+smoothed input and output envelopes. All states share accumulated phase and
+blend their vector fields so material and momentum never reset at a transition.
 
 ## 6. Adapter boundary
 
 ```ts
-export type VoiceOrbSignalListener = (signal: VoiceOrbSignal) => void;
+export type OrbSignalListener = (signal: OrbSignal) => void;
 
-export interface VoiceOrbAdapter {
-  subscribe(listener: VoiceOrbSignalListener): () => void;
+export interface OrbAdapter {
+  subscribe(listener: OrbSignalListener): () => void;
   start?: () => void | Promise<void>;
   stop?: () => void | Promise<void>;
 }
+
+/** @deprecated Use OrbSignalListener. */
+export type VoiceOrbSignalListener = OrbSignalListener;
+/** @deprecated Use OrbAdapter. */
+export type VoiceOrbAdapter = OrbAdapter;
 ```
 
 Requirements:
@@ -131,19 +160,97 @@ Requirements:
 - Adapter errors are represented by `{ state: "error", error }`.
 
 Provider-specific code must stay outside the visual component. A future adapter
-may be added without editing the Ember renderer.
+may be added without editing the crystal-ball renderer.
 
 ## 7. Public component API
 
+The compatibility names are canonical. Existing `VoiceOrb*` names remain
+deprecated aliases so the current prototype can migrate without a flag day.
+
 ```ts
-export interface VoiceOrbColors {
-  primary: string;
-  secondary: string;
-  highlight: string;
-  accent: string;
+export type OrbTheme = "debug" | "circle" | "bars" | "cloud" | "radial";
+export type OrbCloudMode = "shell" | "gas" | "vapor";
+export type OrbControlPosition =
+  "bottom" | "top" | "overlay-bottom" | "overlay-center" | "overlay-top";
+export type OrbControlAppearance = "glass" | "solid" | "minimal";
+
+export interface OrbControlOptions {
+  position?: OrbControlPosition;
+  appearance?: OrbControlAppearance;
+  size?: number | string;
+  gap?: number | string;
+  offsetX?: number | string;
+  offsetY?: number | string;
+  className?: string;
+  style?: React.CSSProperties;
 }
 
-export interface VoiceOrbMotion {
+type DataAttributeValue = string | number | boolean | null | undefined;
+
+export interface OrbHtmlAttributes extends React.AriaAttributes {
+  id?: string;
+  title?: string;
+  role?: string;
+  tabIndex?: number;
+  [dataAttribute: `data-${string}`]: DataAttributeValue;
+}
+
+export type OrbScaleName = "crystal" | "ember" | "iris" | "lagoon";
+
+export type OrbToneRamp = {
+  deepest: string;
+  deep: string;
+  base: string;
+  bright: string;
+  lightest: string;
+};
+
+export interface OrbVisualState {
+  turbulence: number;
+  flowSpeed: number;
+  vortexCount: number;
+  vortexStrength: number;
+  expansion: number;
+  centerPull: number;
+  audioResponse: number;
+  smokeDensity: number;
+  glowIntensity: number;
+  glowPulseSpeed: number;
+  warningDistortion: number;
+  tonePosition: number;
+}
+
+export interface OrbTransitions {
+  defaultMs: number;
+  thinkingToSpeakingMs: number;
+  errorOnsetMs: number;
+  errorRecoveryMs: number;
+}
+
+export interface OrbScaleDefinition {
+  name: OrbScaleName;
+  label: string;
+  colors: {
+    main: OrbToneRamp;
+    warning: OrbToneRamp;
+  };
+  states: Record<OrbState, OrbVisualState>;
+  transitions: OrbTransitions;
+}
+
+export interface OrbScaleOverride {
+  base: OrbScaleName;
+  colors?: {
+    main?: Partial<OrbToneRamp>;
+    warning?: Partial<OrbToneRamp>;
+  };
+  states?: Partial<Record<OrbState, Partial<OrbVisualState>>>;
+  transitions?: Partial<OrbTransitions>;
+}
+
+export type OrbScale = OrbScaleName | OrbScaleOverride;
+
+export interface OrbMotion {
   speed: number;
   intensity: number;
   sensitivity: number;
@@ -151,7 +258,7 @@ export interface VoiceOrbMotion {
   release: number;
 }
 
-export interface VoiceOrbLabels {
+export interface OrbLabels {
   idle: string;
   connecting: string;
   listening: string;
@@ -163,67 +270,121 @@ export interface VoiceOrbLabels {
   retry: string;
 }
 
-export interface VoiceOrbProps extends Omit<
-  React.HTMLAttributes<HTMLDivElement>,
-  "onError"
-> {
-  signal?: VoiceOrbSignal;
-  state?: VoiceOrbState;
+export type OrbStyle = React.CSSProperties & {
+  "--vorb-ui-radial-control-surround"?: string;
+  "--vorb-ui-size"?: string;
+  "--vorb-ui-control-size"?: string;
+  "--vorb-ui-control-gap"?: string;
+  "--vorb-ui-control-offset-x"?: string;
+  "--vorb-ui-control-offset-y"?: string;
+  /** @deprecated Use --vorb-ui-size. */
+  "--voice-orb-size"?: string;
+};
+
+export interface OrbProps extends OrbHtmlAttributes {
+  // Upstream-compatible surface.
+  signal?: OrbSignal;
+  state?: OrbState;
   volume?: number;
-  adapter?: VoiceOrbAdapter;
-
-  /**
-   * Optional externally owned stream to meter. The component must never stop
-   * its tracks.
-   */
-  audioStream?: MediaStream | null;
-
-  /**
-   * Opt-in standalone mode. When true and no adapter/onStart is present,
-   * activating the control requests microphone access.
-   */
-  requestMicrophone?: boolean;
-
-  interactive?: boolean;
+  adapter?: OrbAdapter;
+  theme?: OrbTheme;
+  cloudMode?: OrbCloudMode;
+  control?: OrbControlOptions;
+  /** Numeric values match upstream; responsive CSS strings are additive. */
+  size?: number | string;
+  className?: string;
+  style?: OrbStyle;
   disabled?: boolean;
+  interactive?: boolean;
   onStart?: () => void | Promise<void>;
   onStop?: () => void | Promise<void>;
-  onVoiceError?: (error: unknown) => void;
 
-  size?: number | string;
-  /** Crystal-ball diameter relative to the canvas, clamped to 0.7–1. */
+  // Additive magical extensions.
+  audioStream?: MediaStream | null;
+  requestMicrophone?: boolean;
+  onVoiceError?: (error: unknown) => void;
   ballScale?: number;
-  /** Painted-smoke radius relative to the ball, clamped to 0.5–1.1. */
   smokeScale?: number;
-  colors?: Partial<VoiceOrbColors>;
-  motion?: Partial<VoiceOrbMotion>;
-  labels?: Partial<VoiceOrbLabels>;
-  /** Precise live copy for tool use, transcription, handoff, and similar events. */
+  scale?: OrbScale;
+  motion?: Partial<OrbMotion>;
+  labels?: Partial<OrbLabels>;
   status?: string;
   showStatus?: boolean;
   errorMessage?: string;
 }
+
+export function Orb(props: OrbProps): React.ReactElement;
+
+/** @deprecated Use Orb. */
+export const VoiceOrb: typeof Orb;
+/** @deprecated Use OrbProps. */
+export type VoiceOrbProps = OrbProps;
+
+// The remaining VoiceOrbScale*, VoiceOrbMotion, VoiceOrbLabels, and visual
+// types are deprecated aliases of their Orb* equivalents.
 ```
 
 ### Defaults
 
-| Prop                 | Default                                        |
-| -------------------- | ---------------------------------------------- |
-| `state`              | derived, otherwise `"idle"`                    |
-| `volume`             | derived, otherwise `0`                         |
-| `requestMicrophone`  | `false`                                        |
-| `interactive`        | `true`, but only when a start/stop path exists |
-| `disabled`           | `false`                                        |
-| `size`               | `"clamp(18rem, 48vw, 25rem)"`                  |
-| `ballScale`          | `0.96`                                         |
-| `smokeScale`         | `0.94`                                         |
-| `colors`             | current Ember palette                          |
-| `motion.speed`       | `1`                                            |
-| `motion.intensity`   | `1`                                            |
-| `motion.sensitivity` | `1`                                            |
-| `motion.attack`      | `0.65`                                         |
-| `motion.release`     | `0.22`                                         |
-| `showStatus`         | `true`                                         |
+| Prop                 | Default                                                           |
+| -------------------- | ----------------------------------------------------------------- |
+| `state`              | derived, otherwise `"idle"`                                       |
+| `volume`             | derived, otherwise `0`                                            |
+| `theme`              | `"debug"` for upstream compatibility                              |
+| `cloudMode`          | `"shell"`; `"gas"` is rough smoke, `"vapor"` is soft floating gas |
+| `control.position`   | `"bottom"`                                                        |
+| `control.appearance` | `"glass"`                                                         |
+| `control.size`       | responsive clamp derived from artwork size                        |
+| `control.gap`        | `0.875rem`                                                        |
+| `size`               | `200` pixels                                                      |
+| `requestMicrophone`  | `false`                                                           |
+| `interactive`        | `true`, but only when a lifecycle path exists                     |
+| `disabled`           | `false`                                                           |
+| `ballScale`          | `0.96`                                                            |
+| `smokeScale`         | `0.94`                                                            |
+| `scale`              | `"crystal"`                                                       |
+| `motion.speed`       | `1`                                                               |
+| `motion.intensity`   | `1`                                                               |
+| `motion.sensitivity` | `1`                                                               |
+| `motion.attack`      | `0.65`                                                            |
+| `motion.release`     | `0.22`                                                            |
+| `showStatus`         | `false` on canonical `Orb`; legacy `VoiceOrb` keeps `true`        |
+
+### Magical themes
+
+All upstream theme identifiers remain valid. They are adapters behind the same
+normalized visual-state seam, not separate state machines.
+
+| Theme    | Magical interpretation                                                     |
+| -------- | -------------------------------------------------------------------------- |
+| `radial` | A planar energy pinwheel with layered rays and a stable luminous core      |
+| `cloud`  | The complete crystal cloud: glass, smoke, and internal vortices            |
+| `circle` | A layered orbital signal instrument with scanning arcs and telemetry nodes |
+| `bars`   | Seven minimalist spectral channels with continuous state-responsive motion |
+| `debug`  | An arcane instrument panel exposing state and normalized levels            |
+
+Every theme uses the same dedicated session control when interactive and no
+inert control when passive. Every theme also uses the selected scale and the
+same state action language. Theme changes may alter composition, but must not
+reinterpret state meaning.
+
+### Visual scales
+
+- `crystal` is the default blue/lavender scale. `ember`, `iris`, and `lagoon`
+  are maintained built-ins exported through `ORB_SCALES`.
+- Every scale contains a five-stop main ramp, a five-stop amber/coral warning
+  ramp, a complete target for each conversation state, and transition timings.
+- A custom scale extends one built-in and may override any ramp stop, state
+  value, or transition without restating the complete definition.
+- Normalized visual values are clamped to `0–1`, `vortexCount` to `1–3`, and
+  transition durations to `0–3000 ms`.
+- State and scale changes interpolate in the existing render loop and never
+  recreate the WebGL context.
+- `motion` is applied after the selected scale as global runtime tuning.
+- Scale changes do not alter state meaning. The crystal remains the assistant;
+  smoke direction and rhythm remain the primary state cues.
+- `VOICE_ORB_SCALES` and `DEFAULT_VOICE_ORB_SCALE` remain deprecated aliases
+  for existing users of this prototype.
 
 ### Interaction rules
 
@@ -235,8 +396,9 @@ export interface VoiceOrbProps extends Omit<
   microphone stream.
 - Passive mode renders no inert button. The artwork remains a non-interactive
   status surface.
-- The session control is a separate layout element below the artwork. It must
-  not obscure the ball or smoke.
+- The session control defaults to a separate layout element below the artwork.
+  Callers may place it above or intentionally overlay it through
+  `control.position`.
 - `connecting` disables the control to prevent duplicate starts.
 - `idle` and `error` invoke start/retry.
 - `listening`, `thinking`, and `speaking` invoke stop.
@@ -263,34 +425,54 @@ are stopped immediately and the result is ignored.
 
 ## 9. Internal architecture
 
-The current 900-line component must be separated into focused modules:
+The package must concentrate behavior behind one external `Orb` interface.
+Provider adapters and theme renderers are internal seams; callers should not
+need to understand their implementations.
 
 ```text
-src/components/ui/voice-orb/
-├── index.ts
-├── voice-orb.tsx              # Public API and state/interaction orchestration
-├── voice-orb.types.ts         # Public types
-├── voice-orb.css              # Layout, controls, fallback, state styles
-├── signals.ts                 # State/volume precedence and normalization
-├── use-audio-meter.ts         # Stream metering and ownership-safe cleanup
-├── use-voice-orb-renderer.ts  # WebGL lifecycle and animation loop
-├── ember-shaders.ts           # Shader source
-└── voice-orb.test.tsx
+src/
+├── index.ts                         # vorb-ui root entry
+├── components/Orb/
+│   ├── Orb.tsx                      # Public orchestration module
+│   ├── Orb.types.ts                 # Canonical public types and aliases
+│   └── signals.ts                   # State/volume precedence
+├── presentation/
+│   ├── scales.ts                    # Built-ins and custom resolution
+│   ├── motion.ts                    # Shared phase and reduced-motion policy
+│   └── visual-state.ts              # Renderer-neutral normalized model
+├── themes/
+│   ├── cloud/                       # Full crystal-cloud renderer
+│   ├── cloud/                       # Magical atmospheric renderer
+│   ├── circle/                      # Magical compact renderer
+│   ├── bars/                        # Magical spectral-shard renderer
+│   └── debug/                       # Magical diagnostics renderer
+└── adapters/
+    ├── index.ts                     # vorb-ui/adapters entry
+    ├── types.ts
+    ├── audio-level.ts
+    ├── vapi/
+    ├── elevenlabs/
+    ├── livekit/
+    ├── pipecat/
+    ├── openai-realtime/
+    └── gemini-live/
 ```
 
 Responsibilities:
 
-- `voice-orb.tsx` must not contain shader source, audio sampling loops, or
+- `Orb.tsx` must not contain shader source, audio sampling loops, or
   provider-specific state inference.
 - `signals.ts` is pure and fully unit tested.
-- `use-audio-meter.ts` accepts a stream and returns normalized level data. It
-  does not mutate conversation state.
-- `use-voice-orb-renderer.ts` accepts state, input/output volume, colors, and
-  motion values. It owns WebGL allocation and cleanup.
-- The renderer must expose an internal visual-props seam so a future second
-  renderer can be added without changing signal or adapter logic.
-- Do not add a public `theme` prop until there are at least two supported,
-  production-ready visuals.
+- `presentation/scales.ts` is the appearance seam. It owns built-in definitions,
+  nested custom-scale resolution, clamping, and transition selection.
+- The shared presentation module resolves state, input/output volume, scale,
+  motion, reduced-motion policy, labels, and interaction state once.
+- Theme adapters consume that resolved model. They do not subscribe to
+  providers, own session state, or reinterpret signal precedence.
+- Adapter implementations emit only `OrbSignal`; they never import a theme.
+- Browser audio metering and calibration are shared across adapters.
+- The external seam is the `Orb` interface. Theme and provider seams remain
+  internal except for documented factories and configuration types.
 
 ## 10. Audio normalization
 
@@ -314,7 +496,7 @@ may update at approximately 30 Hz.
 - One animation frame loop per mounted orb.
 - No canvas creation, color parsing, array allocation, or React state update per
   frame.
-- Cache parsed colors and uniform locations.
+- Cache parsed scale colors and uniform locations.
 - Cap device pixel ratio at `2`.
 - Resize through `ResizeObserver`.
 - Pause or substantially reduce work when the document is hidden.
@@ -365,18 +547,23 @@ Error recovery must be possible with keyboard alone.
 
 The existing demo remains a prop playground and must include:
 
+- All five compatibility themes, each rendered in the magical language
 - State selector for all six states
 - Separate input and output volume sliders
 - Canvas size, ball scale, smoke fill, speed, intensity, sensitivity, attack,
   and release controls
-- Ember, Iris, and Lagoon palettes
+- Crystal, Ember, Iris, and Lagoon scales plus one custom extension
 - Interactive/passive toggle
 - Reduced-motion preview
 - Controlled signal example
 - Adapter example using a local simulated adapter
 - Optional standalone microphone example with explicit explanatory copy
+- Import examples for `vorb-ui`, `vorb-ui/adapters`, and
+  `vorb-ui/adapters/livekit`
+- Adapter contract fixtures for Vapi, ElevenLabs, LiveKit, Pipecat, OpenAI
+  Realtime, Gemini Live, and custom controlled signals
 
-Simulation belongs in the demo adapter, not in `VoiceOrb`.
+Simulation belongs in the demo adapter, not in `Orb`.
 
 ## 15. Testing and verification
 
@@ -384,6 +571,8 @@ Use Bun for all commands.
 
 ### Unit tests
 
+- Root `Orb` and deprecated `VoiceOrb` alias behavior
+- Exact upstream theme-name and default acceptance
 - State precedence: scalar state → signal → adapter → idle
 - Direction-aware volume precedence
 - Volume clamping and non-finite inputs
@@ -398,6 +587,14 @@ Use Bun for all commands.
 - Late microphone permission results are cancelled safely
 - Reduced-motion behavior
 - WebGL fallback behavior
+- Built-in scale completeness and immutability
+- Custom scale merging, clamping, and transition selection
+- Every provider adapter's state mapping, audio normalization, lifecycle,
+  duplicate-start protection, unsubscribe behavior, and owned-resource cleanup
+- Audio calibration and media-track metering
+- Package export map and declaration-file smoke tests
+- Type-level positive and `@ts-expect-error` compatibility fixtures copied as
+  consumer scenarios, not tests of internal implementation
 
 ### Visual/browser checks
 
@@ -405,7 +602,8 @@ Use Bun for all commands.
 - Mobile at 390×844
 - Minimum supported orb size
 - Every state
-- Every palette
+- Every compatibility theme
+- Every built-in scale and the custom extension
 - WebGL disabled/failure fallback
 - Keyboard start, stop, retry, and focus
 - No horizontal overflow
@@ -415,55 +613,178 @@ Use Bun for all commands.
 ```bash
 bun run test
 bun run build
+bun run typecheck:package
+bun run test:e2e:built
 ```
 
-The project must add Vitest and a `test` script before v2 is considered
-complete.
+The final `check` script must compose formatting, lint, type checks, unit tests,
+library build, demo build, package-consumer type checks, and built-package E2E
+tests. Individual commands must remain runnable for focused development.
 
-## 16. Migration from the current component
+## 16. Migration from the current prototype
 
-| Current API/behavior                            | v2                                                                |
-| ----------------------------------------------- | ----------------------------------------------------------------- |
-| `onEnd`                                         | Rename to `onStop`                                                |
-| `onStart` may return a `MediaStream`            | `onStart` owns lifecycle only; pass streams through `audioStream` |
-| Implicit microphone request                     | Require `requestMicrophone={true}`                                |
-| `autoConversation`                              | Remove from production component; move to demo adapter            |
-| Top-level `speed`, `intensity`, `sensitivity`   | Group under `motion`                                              |
-| One generic live audio level                    | Add `signal.inputVolume` and `signal.outputVolume`                |
-| Internal state and visual rendering in one file | Split controller, signals, meter, and renderer                    |
-| Error preview inside production component       | Move simulated preview to demo                                    |
+| Current prototype                     | Drop-in package                                                    |
+| ------------------------------------- | ------------------------------------------------------------------ |
+| `VoiceOrb` only                       | Add canonical `Orb`; retain `VoiceOrb` as a deprecated alias       |
+| `VoiceOrb*` public types              | Add canonical `Orb*`; retain source-compatible aliases             |
+| One crystal-ball renderer             | Make it `cloud`; add four magical compatibility themes             |
+| Source-owned private Vite application | Split library build from playground application                    |
+| No package exports                    | Add `.`, `./adapters`, and `./adapters/livekit` exports            |
+| Generic custom adapter only           | Add all six first-party provider factories and public types        |
+| Responsive string size default        | Preserve as extension; canonical compatibility default is `200`    |
+| Crystal is visually default           | Upstream-compatible `theme="debug"` default, magically re-authored |
+| `VOICE_ORB_SCALES`                    | Add `ORB_SCALES`; keep the old name as a deprecated alias          |
 
-Because this is currently a local source-owned component, these changes do not
-need a backwards-compatibility layer. Update the demo and README in the same
-change.
+No compatibility layer is needed for abandoned pre-v2 prototype props. A
+compatibility layer is required for the already-implemented v2 names because
+they are part of this repository's documented interface.
 
 ## 17. Acceptance criteria
 
-Voice Orb v2 is complete when:
+Magical Orb UI v3 is complete when:
 
-1. The public signal and adapter interfaces above are implemented.
-2. Controlled, adapter-backed, passive, and opt-in microphone modes work.
-3. Listening responds to input volume and speaking responds to output volume.
-4. The production component contains no silence-based conversation simulation.
-5. The existing Ember appearance is preserved or improved.
-6. WebGL and audio resources clean up without leaks or ownership violations.
-7. The component remains usable without WebGL and with reduced motion.
-8. Unit tests and desktop/mobile browser checks pass.
-9. `bun run test` and `bun run build` pass.
-10. README usage examples match the final API.
+1. An upstream 0.7.0 consumer fixture compiles after changing package
+   resolution only.
+2. `Orb`, `VoiceOrb`, all core types, every adapter factory, and every documented
+   adapter type are available from the same import paths as upstream.
+3. Controlled, adapter-backed, passive, and opt-in microphone modes work.
+4. All five theme identifiers render a magical but behavior-compatible theme.
+5. Listening responds to input volume and speaking responds to output volume.
+6. The production component contains no silence-based conversation simulation.
+7. Crystal is the default scale and all four scales remain legible in every
+   state and theme.
+8. Provider, WebGL, Web Audio, media, timer, and DOM resources clean up without
+   leaks or ownership violations.
+9. The component remains usable without WebGL and with reduced motion.
+10. ESM, CommonJS, and declaration outputs resolve from every documented
+    package entry.
+11. Unit, type-level, package-consumer, and desktop/mobile browser checks pass.
+12. The full `check` command passes.
+13. README, adapter guides, migration notes, and examples match the final
+    interface.
 
 ## 18. Reference-derived decisions
 
-The reference repository informed these decisions:
+The reference repository defines the compatibility contract:
 
+- **Adopt exactly:** root and subpath exports, core prop/type names, five theme
+  identifiers, six states, signal precedence, and lifecycle semantics.
 - **Adopt:** one normalized signal across controlled and provider-backed modes.
 - **Adopt:** separate input and output levels.
 - **Adopt:** a minimal subscribe/start/stop adapter contract.
 - **Adopt:** interactive and passive variants.
 - **Adopt:** state and scalar prop precedence that remains easy to test.
-- **Adopt:** themes should consume normalized signals, not provider events.
-- **Defer:** multiple themes and public theme names.
-- **Defer:** first-party provider adapters.
-- **Reject for this project:** npm packaging, Changesets, and a monorepo.
+- **Adopt:** provider adapters and their structural SDK types without turning
+  provider SDKs into hard dependencies.
+- **Extend:** visual scales consume normalized signals, not provider events.
+- **Extend:** named scales and motion controls customize every magical theme.
+- **Re-author:** all visual themes around the magical entity language.
+- **Keep optional:** Changesets and a monorepo; neither is required for consumer
+  compatibility.
 - **Improve:** microphone permission becomes explicit and conversation state is
   never inferred from silence.
+
+## 19. Package compatibility contract
+
+The package manifest must identify the distributable library and expose these
+entrypoints:
+
+| Import path                | Required contents                                        |
+| -------------------------- | -------------------------------------------------------- |
+| `vorb-ui`                  | `Orb`, core types, deprecated `VoiceOrb` aliases         |
+| `vorb-ui/adapters`         | Six provider factories, adapter types, calibration types |
+| `vorb-ui/adapters/livekit` | Managed browser LiveKit factory and browser config types |
+
+Required output:
+
+- ESM JavaScript
+- CommonJS JavaScript
+- `.d.ts` declarations for every entry
+- `typesVersions` mappings matching the subpaths
+- React 18+ and React DOM 18+ as peer dependencies
+- `livekit-client >=2.20.0 <3` as an optional peer dependency
+- No provider SDK bundled into the root entry
+- No adapter imported by the root visual bundle
+- The package must be side-effect safe on server import; browser globals are
+  touched only during a browser lifecycle or factory start
+
+Compatibility is verified from a clean consumer fixture importing from the
+built package, not from source aliases. The fixture must cover JSX, core type
+assignability, every adapter entry, CommonJS loading, ESM loading, and
+server-side import without `window`.
+
+## 20. Provider adapter and public type contract
+
+The adapter entry must export:
+
+| Provider         | Factory                       | Public types                                                                                                                                                                                                                  |
+| ---------------- | ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Vapi             | `createVapiAdapter`           | Uses a structural client interface; `assistantId` remains optional                                                                                                                                                            |
+| ElevenLabs       | `createElevenLabsAdapter`     | `ElevenLabsCallbacks`, `ElevenLabsConfig`, `ElevenLabsConnectionType`, `ElevenLabsConversation`, `ElevenLabsConversationClass`, `ElevenLabsMode`, `ElevenLabsOrbAdapter`, `ElevenLabsStartSessionOptions`, `ElevenLabsStatus` |
+| LiveKit advanced | `createLiveKitAdapter`        | `LiveKitAdapterConfig`, `LiveKitConnectionDetails`, `LiveKitOrbAdapter`, `LiveKitResolvedTokenOptions`, `LiveKitTokenOptions`, `LiveKitTokenSource`                                                                           |
+| Pipecat          | `createPipecatAdapter`        | `PipecatAdapterOptions`, `PipecatClientLike`, `PipecatOrbAdapter`, `PipecatParticipantLike`, `PipecatTracksLike`                                                                                                              |
+| OpenAI Realtime  | `createOpenAIRealtimeAdapter` | `OpenAIRealtimeAdapterConfig`, `OpenAIRealtimeClientSecret`, `OpenAIRealtimeOrbAdapter`                                                                                                                                       |
+| Gemini Live      | `createGeminiLiveAdapter`     | `GeminiLiveAdapterConfig`, `GeminiLiveCallbacks`, `GeminiLiveInlineData`, `GeminiLiveOrbAdapter`, `GeminiLiveServerMessage`, `GeminiLiveSession`                                                                              |
+
+The adapter entry also exports:
+
+- `OrbAdapter`
+- `OrbSignal`
+- `OrbSignalListener`
+- `OrbState`
+- `DEFAULT_OUTPUT_VOLUME_CALIBRATION`
+- `OutputVolumeCalibration`
+- `OutputVolumeCalibrationSource`
+- `OutputVolumeSample`
+
+The LiveKit browser subpath exports:
+
+- `createLiveKitAdapter`
+- `LiveKitBrowserAdapterConfig`
+- `LiveKitEndpointAdapterConfig`
+- `LiveKitSandboxAdapterConfig`
+- `LiveKitSandboxOptions`
+- `LiveKitTokenEndpointOptions`
+- `LiveKitOrbAdapter`
+
+Provider factories must follow these shared invariants:
+
+1. `subscribe` supports multiple listeners and returns idempotent cleanup.
+2. `start` and `stop` serialize lifecycle operations and are safe under repeated
+   activation.
+3. Provider state maps into the six canonical states.
+4. Input and output levels stay separate.
+5. Provider quirks—debouncing, sparse events, gain, transport state, and
+   interruption—are normalized inside the adapter.
+6. Resources created by an adapter are stopped exactly once.
+7. Resources supplied by an application are detached but not destroyed.
+8. Authentication material is obtained through caller-provided callbacks or
+   endpoints; long-lived provider secrets never enter the browser package.
+9. Errors emit `{ state: "error", error }` and a later start can recover.
+
+The implementation may improve provider behavior, but it may not narrow any
+documented upstream input type or remove a documented public export.
+
+## 21. Magical visual language
+
+The assistant is a magical entity, not a generic data visualization. Across all
+themes:
+
+- Material appears continuous and conserved. It gathers, mixes, listens, and
+  speaks rather than swapping animation clips.
+- Motion is smooth, lively, and intentional. Avoid vibration, bouncing,
+  flashing, whole-object pumping, and audio-driven global speed changes.
+- Listening visibly receives phrase-like material from the user-facing edge.
+- Thinking mixes collected material through soft self-rotating vortices with
+  hidden cores and long dissolving trails.
+- Speaking organizes material into an outward stream with phrase cadence.
+- Error is a local loss of coherence with a warning flare, not a full recolor.
+- Glass, mist, spectral light, runes, and floating fragments share the selected
+  tonal scale.
+- State remains understandable with motion disabled through composition,
+  density, direction, labels, and localized warning structure.
+- Scale customization changes mood, not the meaning of a state.
+
+The current crystal-ball renderer becomes the reference implementation for
+motion quality. Simpler themes may reduce detail, but they must retain the same
+entity-like continuity and state narrative.

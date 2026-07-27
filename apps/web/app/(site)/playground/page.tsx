@@ -12,7 +12,6 @@ export default function PlaygroundPage() {
     <main className="playground-page">
       <header className="page-intro">
         <div>
-          <p className="eyebrow">Playground</p>
           <h1>Shape the response.</h1>
         </div>
         <p>

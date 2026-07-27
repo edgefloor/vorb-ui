@@ -34,6 +34,7 @@ export const FRAGMENT_SHADER = `
   uniform float uOutputEnergy;
   uniform vec3 uAudioBands;
   uniform float uArticulation;
+  uniform vec4 uVoiceDynamics;
   uniform vec3 uStateA;
   uniform vec3 uStateB;
   uniform float uUnavailable;
@@ -105,6 +106,10 @@ export const FRAGMENT_SHADER = `
     float low = uAudioBands.x;
     float mid = uAudioBands.y;
     float high = uAudioBands.z;
+    float inputDrive = uVoiceDynamics.x;
+    float inputTransient = uVoiceDynamics.y;
+    float outputDrive = uVoiceDynamics.z;
+    float outputTransient = uVoiceDynamics.w;
 
     float wIdle = uStateA.x;
     float wListen = uStateA.y;
@@ -185,17 +190,65 @@ export const FRAGMENT_SHADER = `
       unavailable * 0.7
     );
 
-    // State changes redistribute smoke inside a fixed shell. Live audio never
-    // changes this radius; it travels through the directional fields below.
+    // State changes redistribute smoke inside a fixed shell. Voice energy can
+    // lightly disturb the smoke boundary, but the glass shell remains stable.
     float stateSize =
       (expansion - 0.35) * 0.11 -
       centerPull * 0.035;
+    float speakingContourGesture =
+      (
+        sin(angle * 2.0 + motionTime * 0.19) * 0.5 +
+        sin(angle * 5.0 - motionTime * 0.13 + 1.7) * 0.32 +
+        sin(angle * 7.0 + motionTime * 0.08 + 4.2) * 0.18
+      ) *
+      (0.003 + outputDrive * 0.004 + outputTransient * 0.006);
     float stateContour =
       thinkingFormation *
         sin(angle * 2.0 - motionTime * 0.38) *
         0.004 +
-      wSpeak * sin(angle * 3.0 + motionTime * 0.24) * 0.003;
-    float radiusMotion = stateSize + stateContour;
+      wSpeak *
+        (
+          sin(angle * 3.0 + motionTime * 0.24) * 0.002 +
+          speakingContourGesture
+        );
+    float lowerHemisphere =
+      1.0 - smoothstep(-0.92, 0.1, direction.y);
+    float listeningEdgeNoise =
+      fbm(
+        direction * 3.7 +
+          vec2(-motionTime * 0.052, motionTime * 0.037) +
+          2.4
+      ) -
+      0.5;
+    float speakingEdgeNoise =
+      fbm(
+        direction * 4.1 +
+          vec2(motionTime * 0.068, -motionTime * 0.043) +
+          6.8
+      ) -
+      0.5;
+    float voiceEdgeMotion =
+      wListen *
+        (
+          listeningEdgeNoise *
+            (0.003 + inputDrive * 0.007) -
+          lowerHemisphere *
+            inputTransient *
+            0.006
+        ) +
+      wSpeak *
+        (
+          speakingEdgeNoise *
+            (0.004 + outputDrive * 0.011) +
+          speakingContourGesture *
+            outputTransient *
+            0.65
+        );
+    voiceEdgeMotion = clamp(voiceEdgeMotion, -0.012, 0.012);
+    float radiusMotion =
+      stateSize +
+      stateContour +
+      voiceEdgeMotion;
 
     float organic =
       noise(
@@ -304,10 +357,16 @@ export const FRAGMENT_SHADER = `
       (1.0 - smoothstep(0.035, 0.23, listenLateral)) *
       listenSegment;
     float listeningPhase =
-      sin(
-        (listenAlong / listenLength) * 8.5 -
-          motionTime * 1.15
-      );
+      fbm(
+        vec2(
+          (listenAlong / listenLength) * 7.8 -
+            motionTime * 0.34,
+          listenLateral * 10.5 + motionTime * 0.085
+        ) +
+          vec2(1.8, 6.1)
+      ) *
+        2.0 -
+      1.0;
     float listeningWave =
       (0.5 + 0.5 * listeningPhase) *
       listenCorridor *
@@ -437,36 +496,143 @@ export const FRAGMENT_SHADER = `
       thinkingFormation *
       vortexStrength;
 
-    vec2 speakSource = smokeCenter;
-    vec2 speakExit = vec2(0.0, -0.42) * ballScale;
-    vec2 speakAxis = normalize(speakExit - speakSource);
-    vec2 speakNormal = vec2(-speakAxis.y, speakAxis.x);
-    vec2 speakRelative = uv - speakSource;
-    float speakLength = max(length(speakExit - speakSource), 0.001);
-    float speakAlong = dot(speakRelative, speakAxis);
-    float speakLateral = abs(dot(speakRelative, speakNormal));
-    float speakSegment =
-      smoothstep(-0.035, 0.035, speakAlong) *
-      (1.0 -
-        smoothstep(speakLength - 0.04, speakLength + 0.075, speakAlong));
-    float speakCorridor =
-      (1.0 - smoothstep(0.04, 0.22, speakLateral)) *
-      speakSegment;
-    float speakingPhase =
-      sin(
-        (speakAlong / speakLength) * 8.0 -
-          motionTime * 1.2
+    vec2 speakDelta = uv - smokeCenter;
+    // Speaking uses the same whole-cloud language as a state change. Several
+    // pressure regions form and settle together; there is no directional
+    // emission axis or translated plume.
+    float speakingMicroTransition =
+      clamp(
+        outputDrive * 0.58 +
+          outputTransient * 0.9,
+        0.0,
+        1.0
       );
-    float speakingWave =
-      (0.5 + 0.5 * speakingPhase) *
-      speakCorridor *
-      uOutputEnergy *
-      audioResponse;
-    float speakingRibbon =
-      speakingPhase *
-      speakCorridor *
-      (0.34 + uOutputEnergy * audioResponse * 0.66);
-    vec2 speakDelta = uv - speakSource;
+    vec2 speakingCenterA =
+      vec2(
+        -0.16 + sin(motionTime * 0.19 + 0.4) * 0.035,
+        0.105 + cos(motionTime * 0.16 + 1.2) * 0.03
+      ) *
+      ballScale;
+    vec2 speakingCenterB =
+      vec2(
+        0.17 + cos(motionTime * 0.15 + 2.5) * 0.032,
+        0.065 + sin(motionTime * 0.21 + 3.1) * 0.038
+      ) *
+      ballScale;
+    vec2 speakingCenterC =
+      vec2(
+        sin(motionTime * 0.17 + 4.7) * 0.045,
+        -0.175 + cos(motionTime * 0.2 + 5.4) * 0.032
+      ) *
+      ballScale;
+    vec2 speakingDeltaA = uv - speakingCenterA;
+    vec2 speakingDeltaB = uv - speakingCenterB;
+    vec2 speakingDeltaC = uv - speakingCenterC;
+    float speakingDistanceA = length(speakingDeltaA);
+    float speakingDistanceB = length(speakingDeltaB);
+    float speakingDistanceC = length(speakingDeltaC);
+    float speakingFalloffA =
+      1.0 - smoothstep(0.055, 0.3, speakingDistanceA);
+    float speakingFalloffB =
+      1.0 - smoothstep(0.045, 0.28, speakingDistanceB);
+    float speakingFalloffC =
+      1.0 - smoothstep(0.05, 0.27, speakingDistanceC);
+    float speakingCellNoiseA =
+      fbm(
+        speakingDeltaA * 5.1 +
+          vec2(-motionTime * 0.12, motionTime * 0.07) +
+          1.9
+      );
+    float speakingCellNoiseB =
+      fbm(
+        speakingDeltaB * 5.8 +
+          vec2(motionTime * 0.09, -motionTime * 0.1) +
+          5.6
+      );
+    float speakingCellNoiseC =
+      fbm(
+        speakingDeltaC * 6.3 +
+          vec2(motionTime * 0.07, motionTime * 0.11) +
+          8.8
+      );
+    float speakingStageA =
+      smoothstep(0.06, 0.34, speakingMicroTransition);
+    float speakingStageB =
+      smoothstep(0.2, 0.58, speakingMicroTransition);
+    float speakingStageC =
+      smoothstep(0.38, 0.78, speakingMicroTransition);
+    float speakingCellA =
+      speakingFalloffA *
+      smoothstep(
+        0.3,
+        0.74,
+        speakingCellNoiseA + speakingMicroTransition * 0.19
+      ) *
+      speakingStageA;
+    float speakingCellB =
+      speakingFalloffB *
+      smoothstep(
+        0.32,
+        0.75,
+        speakingCellNoiseB + speakingMicroTransition * 0.17
+      ) *
+      speakingStageB;
+    float speakingCellC =
+      speakingFalloffC *
+      smoothstep(
+        0.31,
+        0.73,
+        speakingCellNoiseC + speakingMicroTransition * 0.16
+      ) *
+      speakingStageC;
+    float speakingCellFrontA =
+      speakingFalloffA *
+      smoothstep(0.055, 0.12, speakingDistanceA) *
+      (1.0 - smoothstep(0.17, 0.27, speakingDistanceA)) *
+      speakingStageA;
+    float speakingCellFrontB =
+      speakingFalloffB *
+      smoothstep(0.045, 0.11, speakingDistanceB) *
+      (1.0 - smoothstep(0.16, 0.25, speakingDistanceB)) *
+      speakingStageB;
+    float speakingCellFrontC =
+      speakingFalloffC *
+      smoothstep(0.05, 0.115, speakingDistanceC) *
+      (1.0 - smoothstep(0.155, 0.24, speakingDistanceC)) *
+      speakingStageC;
+    float speakingCells =
+      clamp(
+        speakingCellA * 0.82 +
+          speakingCellB * 0.74 +
+          speakingCellC * 0.68,
+        0.0,
+        1.0
+      );
+    float speakingCellFronts =
+      clamp(
+        speakingCellFrontA * speakingCellNoiseA +
+          speakingCellFrontB * speakingCellNoiseB * 0.9 +
+          speakingCellFrontC * speakingCellNoiseC * 0.82,
+        0.0,
+        1.0
+      );
+    vec2 speakingMorphField =
+      (
+        speakingDeltaA /
+          (speakingDistanceA + 0.07) *
+          speakingCellA +
+        speakingDeltaB /
+          (speakingDistanceB + 0.065) *
+          speakingCellB *
+          0.88 +
+        speakingDeltaC /
+          (speakingDistanceC + 0.06) *
+          speakingCellC *
+          0.78
+      ) *
+      wSpeak *
+      audioResponse *
+      (0.024 + speakingMicroTransition * 0.112);
     float speakingDrift =
       0.78 +
       fbm(
@@ -475,15 +641,18 @@ export const FRAGMENT_SHADER = `
           7.4
       ) *
       0.22;
-    vec2 speakingField =
-      speakAxis *
-      speakCorridor *
-      speakingDrift *
-      wSpeak *
-      (0.018 +
-        expansion * 0.024 +
-        speakingWave * 0.12 +
-        uOutputEnergy * audioResponse * 0.035);
+    float speakingStateNoise =
+      fbm(
+        uv * 3.25 +
+          vec2(
+            motionTime * 0.09,
+            -motionTime * 0.075
+          ) +
+          3.6
+      );
+    vec2 speakingTangent =
+      vec2(-direction.y, direction.x);
+    vec2 speakingField = vec2(0.0);
 
     // State composition masks reshape the same cloud layers used by every
     // mode. No state-specific graphic is composited over the smoke.
@@ -564,12 +733,7 @@ export const FRAGMENT_SHADER = `
       (low * 0.04 + mid * 0.025 + listeningWave * 0.07) *
       wListen *
       audioResponse;
-    vec2 outputOffset =
-      speakAxis *
-      speakCorridor *
-      (mid * 0.035 + high * 0.02 + speakingWave * 0.075) *
-      wSpeak *
-      audioResponse;
+    vec2 outputOffset = vec2(0.0);
     float listeningEddy =
       fbm(
         base * 0.62 +
@@ -592,14 +756,7 @@ export const FRAGMENT_SHADER = `
           7.6
       ) -
       0.5;
-    vec2 speakingCarry =
-      (
-        speakAxis * speakingEddy +
-        speakNormal * speakingEddy * 0.12
-      ) *
-      speakCorridor *
-      wSpeak *
-      (0.014 + uOutputEnergy * audioResponse * 0.04);
+    vec2 speakingCarry = vec2(0.0);
     vec2 thinkingCarry =
       (
         vec2(
@@ -627,11 +784,99 @@ export const FRAGMENT_SHADER = `
     vec2 voiceOffset =
       (inputOffset + outputOffset) *
       (1.0 - unavailable * 0.82);
+    // Listening and speaking share the same smoke, but move it in opposite
+    // directions. Noise creates non-repeating lanes and packets; the transient
+    // envelopes reserve the strongest motion for actual rises in voice energy.
+    float listeningLaneNoise =
+      fbm(
+        vec2(
+          listenLateral * 12.0 + motionTime * 0.12,
+          listenAlong * 7.2 - motionTime * 0.24
+        ) +
+          vec2(2.1, 5.7)
+      );
+    float listeningWisp =
+      smoothstep(
+        0.42,
+        0.78,
+        listeningLaneNoise + listenCorridor * 0.24
+      ) *
+      listenCorridor;
+    float listeningCompressionNoise =
+      fbm(
+        vec2(
+          listenAlong * 10.5 - motionTime * 0.7,
+          listenLateral * 8.5 + motionTime * 0.08
+        ) +
+          vec2(4.3, 1.6)
+      );
+    float listeningCompression =
+      smoothstep(0.5, 0.82, listeningCompressionNoise) *
+      listenCorridor *
+      inputTransient;
+    vec2 listeningInhaleWarp =
+      (
+        listenDelta /
+          (length(listenDelta) + 0.11) *
+          listeningWisp *
+          (0.012 + inputDrive * 0.052) +
+        listenAxis *
+          listeningCompression *
+          (0.025 + inputTransient * 0.045) +
+        listenNormal *
+          (listeningLaneNoise - 0.5) *
+          listeningWisp *
+          0.018
+      ) *
+      wListen *
+      audioResponse;
+
+    float speakingPacketNoise =
+      fbm(
+        uv * 5.6 +
+          vec2(
+            motionTime * (0.12 + outputDrive * 0.08),
+            -motionTime * 0.095
+          ) +
+          vec2(7.2, 3.4)
+      );
+    float speakingPacket =
+      smoothstep(
+        0.43,
+        0.76,
+        speakingPacketNoise +
+          speakingMicroTransition * 0.13
+      );
+    float speakingPacketFront =
+      smoothstep(0.5, 0.7, speakingPacketNoise) *
+      (
+        1.0 -
+        smoothstep(0.76, 0.91, speakingPacketNoise)
+      );
+    float speakingCrosswind =
+      fbm(
+        uv * 3.4 +
+          vec2(
+            -motionTime * 0.047,
+            motionTime * 0.036
+          ) +
+          8.4
+      ) -
+      0.5;
+    vec2 speakingPacketWarp = vec2(0.0);
+    float voiceMotionEnvelope =
+      1.0 - smoothstep(0.34, 0.5, localR);
+    vec2 organicVoiceWarp =
+      (listeningInhaleWarp + speakingPacketWarp) *
+      voiceMotionEnvelope *
+      (0.62 + max(low, mid) * 0.38) *
+      (1.0 - unavailable * 0.82);
     vec2 warped =
       base +
       flow +
       thinkingMixWarp +
       voiceOffset +
+      organicVoiceWarp +
       listeningCarry +
       thinkingCarry +
       speakingCarry +
@@ -668,7 +913,9 @@ export const FRAGMENT_SHADER = `
       listeningDrift * 0.28 +
       listenFocusDensity * 0.38 +
       listenCorridor * 0.18 +
-      listeningWave * 0.34 -
+      listeningWave * 0.22 +
+      listeningWisp * 0.2 +
+      listeningCompression * 0.18 -
       0.48;
     float thinkingComposition =
       thoughtFolds * 0.32 +
@@ -676,9 +923,8 @@ export const FRAGMENT_SHADER = `
     float speakingComposition =
       speakingDrift * 0.18 +
       speakBody * 0.24 +
-      speakCorridor * 0.42 +
-      speakingWave * 0.62 -
-      0.34;
+      (speakingStateNoise - 0.5) * 0.12 -
+      0.21;
 
     backCloud = smoothstep(
       0.22,
@@ -720,11 +966,8 @@ export const FRAGMENT_SHADER = `
           thoughtFolds *
           0.032 +
         wSpeak *
-          (
-            speakingComposition * 0.055 +
-            speakCorridor * 0.08 +
-            speakingWave * 0.16
-          )
+          speakingComposition *
+          0.07
     );
 
     float normalizedR = clamp(
@@ -787,15 +1030,14 @@ export const FRAGMENT_SHADER = `
       cloudPigment * 0.72 +
         0.12 +
         listenCorridor * 0.12 +
-        listeningRibbon * 0.24,
+        listeningRibbon * 0.16 +
+        listeningWisp * 0.16,
       0.0,
       1.0
     );
     float speakingPigment = clamp(
       cloudPigment * 0.68 +
-        0.14 +
-        speakCorridor * 0.14 +
-        speakingRibbon * 0.27,
+        0.14,
       0.0,
       1.0
     );
@@ -836,6 +1078,25 @@ export const FRAGMENT_SHADER = `
       thinkingFormation * 0.035
     );
     color = mix(color, primaryColor * 1.035, wSpeak * 0.06);
+    float listeningFocusLight =
+      (
+        1.0 -
+        smoothstep(
+          0.045 * ballScale,
+          0.27 * ballScale,
+          length(uv - listenFocus)
+        )
+      ) *
+      inputTransient *
+      wListen;
+    float speakingPacketLight = 0.0;
+    color +=
+      highlightColor *
+      (
+        listeningFocusLight * 0.075 +
+        speakingPacketLight * 0.135
+      ) *
+      (1.0 - unavailable * 0.86);
 
     // Error is a loss of coherence, not another pulsing activity state.
     float fracture =

@@ -49,19 +49,39 @@ export class DemoVoiceAdapter implements OrbAdapter {
   private simulatedVolume(elapsed: number, duration: number, role: "listening" | "speaking") {
     const seconds = elapsed / 1000;
     const envelope = Math.min(1, elapsed / 220, Math.max(0, duration - elapsed) / 220);
-    const voice =
+    const syllables =
       role === "listening"
-        ? 0.25 +
-          Math.sin(seconds * 7.7) * 0.09 +
-          Math.sin(seconds * 13.1 + 0.8) * 0.06 +
-          Math.sin(seconds * 21.2) * 0.035
-        : 0.5 +
-          Math.sin(seconds * 8.4) * 0.17 +
-          Math.sin(seconds * 15.6 + 1.2) * 0.1 +
-          Math.sin(seconds * 25.2) * 0.05;
-    const minimum = role === "listening" ? 0.025 : 0.05;
+        ? [
+            [0.16, 0.11, 0.42],
+            [0.43, 0.14, 0.58],
+            [0.74, 0.12, 0.48],
+            [1.2, 0.16, 0.62],
+            [1.53, 0.12, 0.44],
+            [2.02, 0.15, 0.56],
+            [2.31, 0.11, 0.38],
+            [2.7, 0.17, 0.6],
+          ]
+        : [
+            [0.14, 0.1, 0.62],
+            [0.37, 0.12, 0.78],
+            [0.66, 0.15, 0.7],
+            [1.06, 0.12, 0.86],
+            [1.31, 0.1, 0.58],
+            [1.66, 0.16, 0.82],
+            [2.08, 0.13, 0.72],
+            [2.34, 0.1, 0.52],
+            [2.66, 0.15, 0.88],
+            [2.91, 0.09, 0.56],
+          ];
+    const phrase = syllables.reduce((level, [center, width, strength]) => {
+      const distance = (seconds - center) / width;
+      return level + Math.exp(-distance * distance * 1.7) * strength;
+    }, 0);
+    const articulation =
+      0.84 + Math.sin(seconds * 18.7 + 0.4) * 0.1 + Math.sin(seconds * 31.3 + 1.1) * 0.06;
+    const voice = phrase < 0.025 ? 0 : phrase * articulation;
     const maximum = role === "listening" ? 0.6 : 0.92;
-    return Math.min(maximum, Math.max(minimum, voice * envelope));
+    return Math.min(maximum, Math.max(0, voice * envelope));
   }
 
   private emit(signal: OrbSignal) {

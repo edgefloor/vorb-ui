@@ -25,6 +25,9 @@ test("loads the built package and every theme/state combination", async ({ page 
       await expect(fixture).toBeVisible();
       await expect(fixture.locator(`[data-theme="${theme}"][data-state="${state}"]`)).toBeVisible();
       await expect(fixture.getByRole("button")).toHaveCount(0);
+      if (theme === "cloud") {
+        await expect(fixture.locator("canvas")).toHaveClass(/voice-orb__canvas--ready/);
+      }
     }
   }
 

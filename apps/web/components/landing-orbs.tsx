@@ -340,7 +340,6 @@ export function CloudMarquee() {
     <section className="cloud-gallery" aria-labelledby="cloud-gallery-title">
       <div className="cloud-gallery__heading">
         <div>
-          <p className="eyebrow">Cloud studies</p>
           <h2 id="cloud-gallery-title">One signal. Many atmospheres.</h2>
         </div>
         <p>
@@ -365,10 +364,6 @@ export function HeroOrb() {
   return (
     <div className="hero-orb">
       <div className="hero-orb__stage" data-state={state}>
-        <div className="hero-orb__meta" aria-hidden="true">
-          <span>state / {state}</span>
-          <span>simulation / live signal</span>
-        </div>
         <Orb
           cloudMode="vapor"
           interactive={false}

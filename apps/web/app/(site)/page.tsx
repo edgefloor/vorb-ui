@@ -12,7 +12,6 @@ export default function HomePage() {
     <main>
       <section className="hero">
         <div className="hero__copy">
-          <p className="eyebrow">React primitive · realtime voice</p>
           <h1>Give voice a visible state.</h1>
           <p className="hero__lede">
             A focused visual layer for listening, thinking, speaking, and failure—controlled by your
@@ -49,7 +48,6 @@ export default function HomePage() {
       <section className="section architecture" id="api">
         <div className="section-heading">
           <div>
-            <p className="eyebrow">The whole surface</p>
             <h2>Small API. Clear boundary.</h2>
           </div>
           <p>

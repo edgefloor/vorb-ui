@@ -9,6 +9,7 @@ import type {
   OrbVisualState,
 } from "../../types";
 import { FRAGMENT_SHADER, VERTEX_SHADER } from "./shaders";
+import { createVoiceDynamicsState, stepVoiceDynamics } from "./voice-dynamics";
 
 type Rgb = [number, number, number];
 type RgbToneRamp = Record<keyof OrbToneRamp, Rgb>;
@@ -39,6 +40,7 @@ type Uniforms = Record<
   | "outputEnergy"
   | "audioBands"
   | "articulation"
+  | "voiceDynamics"
   | "stateA"
   | "stateB"
   | "unavailable",
@@ -253,6 +255,7 @@ function createRenderer(canvas: HTMLCanvasElement): Renderer | null {
         outputEnergy: uniform("uOutputEnergy"),
         audioBands: uniform("uAudioBands"),
         articulation: uniform("uArticulation"),
+        voiceDynamics: uniform("uVoiceDynamics"),
         stateA: uniform("uStateA"),
         stateB: uniform("uStateB"),
         unavailable: uniform("uUnavailable"),
@@ -349,8 +352,8 @@ export function useCloudRenderer({
     const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
 
     const runtime = {
-      inputEnergy: 0,
-      outputEnergy: 0,
+      inputDynamics: createVoiceDynamicsState(),
+      outputDynamics: createVoiceDynamicsState(),
       unavailable: 0,
       articulation: 0.12,
       low: 0.15,
@@ -358,6 +361,7 @@ export function useCloudRenderer({
       high: 0.12,
       phase: 0,
       thinkingPhase: 0,
+      speechScale: 1,
       visual: { ...scale.states[state] },
       main: cloneRgbRamp(configRef.current.colors.main),
       warning: cloneRgbRamp(configRef.current.colors.warning),
@@ -425,16 +429,27 @@ export function useCloudRenderer({
         0,
         1,
       );
-      const inputTarget = config.state === "listening" ? inputSample : 0;
-      const outputTarget = config.state === "speaking" ? outputSample : 0;
-      const inputRate =
-        inputTarget > runtime.inputEnergy ? config.motion.attack : config.motion.release;
-      const outputRate =
-        outputTarget > runtime.outputEnergy ? config.motion.attack : config.motion.release;
-      runtime.inputEnergy +=
-        (inputTarget - runtime.inputEnergy) * smoothRate(inputRate * 0.2, deltaFrames);
-      runtime.outputEnergy +=
-        (outputTarget - runtime.outputEnergy) * smoothRate(outputRate * 0.2, deltaFrames);
+      stepVoiceDynamics(runtime.inputDynamics, inputSample, {
+        active: config.state === "listening",
+        attack: config.motion.attack,
+        release: config.motion.release,
+        deltaFrames,
+      });
+      stepVoiceDynamics(runtime.outputDynamics, outputSample, {
+        active: config.state === "speaking",
+        attack: config.motion.attack,
+        release: config.motion.release,
+        deltaFrames,
+      });
+      const speechScaleTarget =
+        !motionDisabled && config.state === "speaking"
+          ? 0.82 + Math.pow(outputSample, 0.75) * 0.42
+          : 1;
+      const speechScaleRate = smoothRate(
+        speechScaleTarget > runtime.speechScale ? 0.38 : 0.26,
+        deltaFrames,
+      );
+      runtime.speechScale += (speechScaleTarget - runtime.speechScale) * speechScaleRate;
 
       const targetUnavailable = config.state === "error" ? 1 : 0;
       const targetArticulation = 0.1 + runtime.visual.turbulence * 0.62;
@@ -450,8 +465,8 @@ export function useCloudRenderer({
       runtime.articulation +=
         (targetArticulation - runtime.articulation) * smoothRate(0.04, deltaFrames);
 
-      const listening = runtime.inputEnergy;
-      const speaking = runtime.outputEnergy;
+      const listening = runtime.inputDynamics.drive;
+      const speaking = runtime.outputDynamics.drive;
       const lowTarget = 0.08 + listening * 0.76 + speaking * 0.42;
       const midTarget = 0.07 + listening * 0.48 + speaking * 0.75;
       const highTarget = 0.06 + listening * 0.28 + speaking * 0.58;
@@ -511,12 +526,15 @@ export function useCloudRenderer({
       );
       const safeBallScale = clamp(config.ballScale, 0.7, 1);
       const safeSmokeScale = clamp(config.smokeScale, 0.5, 1.1);
-      gl.uniform1f(uniforms.glowRadius, 0.47 * safeBallScale * safeSmokeScale);
+      gl.uniform1f(
+        uniforms.glowRadius,
+        0.47 * safeBallScale * safeSmokeScale * runtime.speechScale,
+      );
       gl.uniform1f(uniforms.ballScale, safeBallScale);
       gl.uniform1f(uniforms.shellVisibility, config.cloudMode === "shell" ? 1 : 0);
       gl.uniform1f(uniforms.gasRoughness, config.cloudMode === "gas" ? 1 : 0);
-      gl.uniform1f(uniforms.inputEnergy, motionDisabled ? 0.18 : runtime.inputEnergy);
-      gl.uniform1f(uniforms.outputEnergy, motionDisabled ? 0.18 : runtime.outputEnergy);
+      gl.uniform1f(uniforms.inputEnergy, motionDisabled ? 0.18 : runtime.inputDynamics.fast);
+      gl.uniform1f(uniforms.outputEnergy, motionDisabled ? 0.18 : runtime.outputDynamics.fast);
       gl.uniform3f(
         uniforms.audioBands,
         motionDisabled ? 0.16 : runtime.low,
@@ -524,6 +542,13 @@ export function useCloudRenderer({
         motionDisabled ? 0.12 : runtime.high,
       );
       gl.uniform1f(uniforms.articulation, runtime.articulation);
+      gl.uniform4f(
+        uniforms.voiceDynamics,
+        motionDisabled ? 0.18 : runtime.inputDynamics.drive,
+        motionDisabled ? 0 : runtime.inputDynamics.transient,
+        motionDisabled ? 0.18 : runtime.outputDynamics.drive,
+        motionDisabled ? 0 : runtime.outputDynamics.transient,
+      );
       gl.uniform3f(uniforms.stateA, runtime.idle, runtime.listening, runtime.thinking);
       gl.uniform3f(uniforms.stateB, runtime.speaking, runtime.connecting, runtime.error);
       gl.uniform1f(uniforms.unavailable, runtime.unavailable);

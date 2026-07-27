@@ -8,6 +8,7 @@ const config = {
   trailingSlash: true,
   basePath,
   assetPrefix: basePath || undefined,
+  allowedDevOrigins: ["127.0.0.1"],
   images: {
     unoptimized: true,
   },

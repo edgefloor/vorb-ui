@@ -83,6 +83,49 @@ function InspectorSection({
   );
 }
 
+const CODE_TOKEN_PATTERN =
+  /("(?:\\.|[^"\\])*")|\b(Orb)\b|([A-Za-z]\w*)(?=\s*[=:])|(\b\d+(?:\.\d+)?\b)|([<>{}=,:/]+)/g;
+
+function HighlightedCode({ code }: { code: string }) {
+  return code.split("\n").map((line, lineIndex) => {
+    const tokens: ReactNode[] = [];
+    let cursor = 0;
+
+    for (const match of line.matchAll(CODE_TOKEN_PATTERN)) {
+      const start = match.index;
+      if (start > cursor) tokens.push(line.slice(cursor, start));
+
+      const className = match[1]
+        ? "workbench__code-token--string"
+        : match[2]
+          ? "workbench__code-token--component"
+          : match[3]
+            ? "workbench__code-token--property"
+            : match[4]
+              ? "workbench__code-token--number"
+              : "workbench__code-token--punctuation";
+
+      tokens.push(
+        <span className={className} key={`${lineIndex}-${start}`}>
+          {match[0]}
+        </span>,
+      );
+      cursor = start + match[0].length;
+    }
+
+    if (cursor < line.length) tokens.push(line.slice(cursor));
+
+    return (
+      <span className="workbench__code-line" key={lineIndex}>
+        <span className="workbench__code-line-number" aria-hidden="true">
+          {String(lineIndex + 1).padStart(2, "0")}
+        </span>
+        <span>{tokens}</span>
+      </span>
+    );
+  });
+}
+
 export function OrbPlayground() {
   const [source, setSource] = useState<SignalSource>("manual");
   const [manualState, setManualState] = useState<OrbState>("idle");
@@ -161,23 +204,22 @@ export function OrbPlayground() {
           ? "adapter={adapter}"
           : "requestMicrophone";
     const props = [
-      `theme="${theme}"`,
+      [
+        `theme="${theme}"`,
+        ...(theme === "cloud" ? [`cloudMode="${cloudMode}"`] : []),
+        `scale=${selectedScale.code}`,
+        `size={${size}}`,
+      ].join(" "),
       ...(theme === "cloud"
-        ? [
-            `cloudMode="${cloudMode}"`,
-            `ballScale={${ballScale.toFixed(2)}}`,
-            `smokeScale={${smokeScale.toFixed(2)}}`,
-          ]
+        ? [`ballScale={${ballScale.toFixed(2)}} smokeScale={${smokeScale.toFixed(2)}}`]
         : []),
-      `size={${size}}`,
-      `scale=${selectedScale.code}`,
       sourceProp,
       showCallControl
         ? `control={{ position: "${controlPosition}", appearance: "${controlAppearance}", size: ${controlSize}, gap: ${controlGap} }}`
         : "interactive={false}",
       `motion={{ speed: ${reducedMotion ? 0 : speed.toFixed(1)}, intensity: ${intensity.toFixed(1)}, sensitivity: ${sensitivity.toFixed(1)}, attack: ${attack.toFixed(2)}, release: ${release.toFixed(2)} }}`,
     ];
-    return `<Orb ${props.join(" ")} />`;
+    return `<Orb\n  ${props.join("\n  ")}\n/>`;
   }, [
     attack,
     ballScale,
@@ -240,13 +282,6 @@ export function OrbPlayground() {
   return (
     <div className="workbench">
       <header className="workbench__toolbar">
-        <div className="workbench__identity">
-          <span className="workbench__status" data-state={previewSignal.state} aria-hidden="true" />
-          <div>
-            <p>{sourceLabel}</p>
-            <span>{previewSignal.state}</span>
-          </div>
-        </div>
         <div className="mode-tabs" aria-label="Signal source">
           {SIGNAL_SOURCES.map((item) => (
             <button
@@ -316,11 +351,25 @@ export function OrbPlayground() {
           }
         />
         <div className="workbench__readout" aria-label="Current component configuration">
-          <span>Props</span>
-          <code>{codeExample}</code>
-          <button type="button" onClick={() => void copyCode()}>
-            {copied ? "Copied" : "Copy"}
-          </button>
+          <div className="workbench__readout-header">
+            <span>Orb preview</span>
+            <button
+              type="button"
+              aria-label="Copy component configuration"
+              onClick={() => void copyCode()}
+            >
+              <svg aria-hidden="true" viewBox="0 0 16 16">
+                <rect x="5.25" y="5.25" width="7.5" height="7.5" rx="1.25" />
+                <path d="M10.5 5.25V4.5c0-.69-.56-1.25-1.25-1.25H4.5c-.69 0-1.25.56-1.25 1.25v4.75c0 .69.56 1.25 1.25 1.25h.75" />
+              </svg>
+              <span>{copied ? "Copied" : "Copy"}</span>
+            </button>
+          </div>
+          <pre tabIndex={0}>
+            <code>
+              <HighlightedCode code={codeExample} />
+            </code>
+          </pre>
         </div>
       </section>
 

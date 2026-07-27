@@ -1,13 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Orb, type OrbState, type OrbTheme } from "vorb-ui";
 
-const STATES: Array<{ state: OrbState; label: string }> = [
-  { state: "idle", label: "Idle" },
-  { state: "listening", label: "Listen" },
-  { state: "thinking", label: "Think" },
-  { state: "speaking", label: "Speak" },
+const STATES: Array<{ state: OrbState; label: string; duration: number }> = [
+  { state: "idle", label: "Idle", duration: 1800 },
+  { state: "listening", label: "Listen", duration: 2800 },
+  { state: "thinking", label: "Think", duration: 2200 },
+  { state: "speaking", label: "Speak", duration: 2800 },
 ];
 
 const THEMES: Array<{
@@ -45,7 +45,17 @@ const THEMES: Array<{
 ];
 
 export function HeroOrb() {
-  const [state, setState] = useState<OrbState>("listening");
+  const [stateIndex, setStateIndex] = useState(1);
+  const currentState = STATES[stateIndex] ?? STATES[0];
+  const state = currentState.state;
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setStateIndex((current) => (current + 1) % STATES.length);
+    }, currentState.duration);
+
+    return () => window.clearTimeout(timer);
+  }, [currentState.duration, stateIndex]);
 
   return (
     <div className="hero-orb">
@@ -69,12 +79,12 @@ export function HeroOrb() {
         />
       </div>
       <div className="state-picker" aria-label="Preview state">
-        {STATES.map((item) => (
+        {STATES.map((item, index) => (
           <button
             aria-pressed={state === item.state}
             className={state === item.state ? "is-active" : undefined}
             key={item.state}
-            onClick={() => setState(item.state)}
+            onClick={() => setStateIndex(index)}
             type="button"
           >
             <span aria-hidden="true" />

@@ -9,6 +9,7 @@ export default [
       "**/dist/**",
       "demo-dist/**",
       "**/.next/**",
+      "**/out/**",
       "**/.source/**",
       "node_modules/**",
       "coverage/**",

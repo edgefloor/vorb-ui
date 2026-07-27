@@ -16,7 +16,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html className="dark" lang="en" suppressHydrationWarning>
       <body>
-        <RootProvider search={{ enabled: true }} theme={{ enabled: false, defaultTheme: "dark" }}>
+        <RootProvider search={{ enabled: false }} theme={{ enabled: false, defaultTheme: "dark" }}>
           {children}
         </RootProvider>
       </body>

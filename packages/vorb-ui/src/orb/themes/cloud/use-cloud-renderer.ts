@@ -8,6 +8,12 @@ import type {
   OrbToneRamp,
   OrbVisualState,
 } from "../../types";
+import {
+  resolveCloudPhaseRate,
+  resolveMotionAmplitude,
+  resolveThinkingPhaseRate,
+  resolveTransitionDuration,
+} from "./motion-contract";
 import { FRAGMENT_SHADER, VERTEX_SHADER } from "./shaders";
 import { createVoiceDynamicsState, stepVoiceDynamics } from "./voice-dynamics";
 
@@ -18,7 +24,7 @@ type Uniforms = Record<
   | "time"
   | "thinkingPhase"
   | "resolution"
-  | "intensity"
+  | "motionAmplitude"
   | "main0"
   | "main1"
   | "main2"
@@ -233,7 +239,7 @@ function createRenderer(canvas: HTMLCanvasElement): Renderer | null {
         time: uniform("uTime"),
         thinkingPhase: uniform("uThinkingPhase"),
         resolution: uniform("uResolution"),
-        intensity: uniform("uIntensity"),
+        motionAmplitude: uniform("uMotionAmplitude"),
         main0: uniform("uMain0"),
         main1: uniform("uMain1"),
         main2: uniform("uMain2"),
@@ -409,10 +415,14 @@ export function useCloudRenderer({
         runtime.lastState = config.state;
         runtime.lastScale = config.scale;
       }
+      const transitionDuration = resolveTransitionDuration(
+        runtime.transitionMs,
+        config.motion.speed,
+      );
       const transitionRate =
-        motionDisabled || runtime.transitionMs <= 0
+        motionDisabled || transitionDuration <= 0
           ? 1
-          : 1 - Math.exp(-(deltaFrames * 16.667) / Math.max(1, runtime.transitionMs / 3));
+          : 1 - Math.exp(-(deltaFrames * 16.667) / Math.max(1, transitionDuration / 3));
       approachVisualState(runtime.visual, config.scale.states[config.state], transitionRate);
       approachRgbRamp(runtime.main, config.colors.main, transitionRate);
       approachRgbRamp(runtime.warning, config.colors.warning, transitionRate);
@@ -441,9 +451,10 @@ export function useCloudRenderer({
         release: config.motion.release,
         deltaFrames,
       });
+      const speechScaleGesture = 0.82 + Math.pow(outputSample, 0.75) * 0.42;
       const speechScaleTarget =
         !motionDisabled && config.state === "speaking"
-          ? 0.82 + Math.pow(outputSample, 0.75) * 0.42
+          ? 1 + (speechScaleGesture - 1) * resolveMotionAmplitude(config.motion.intensity)
           : 1;
       const speechScaleRate = smoothRate(
         speechScaleTarget > runtime.speechScale ? 0.38 : 0.26,
@@ -476,14 +487,12 @@ export function useCloudRenderer({
       runtime.high += (highTarget - runtime.high) * bandRate;
 
       if (!motionDisabled) {
-        const motionSpeed = clamp(config.motion.speed, 0, 3);
-        const phaseSpeed = (0.18 + runtime.visual.flowSpeed * 1.28) * motionSpeed;
-        runtime.phase += (deltaFrames / 60) * phaseSpeed;
-        // Keep the calm default intact, but let the upper half of the Motion
-        // control accelerate thinking enough for vortex rotation to read.
-        const thinkingMotionSpeed = motionSpeed <= 1 ? motionSpeed : 1 + (motionSpeed - 1) * 2;
-        const thinkingPhaseSpeed = (0.28 + runtime.visual.flowSpeed * 0.82) * thinkingMotionSpeed;
-        runtime.thinkingPhase += (deltaFrames / 60) * thinkingPhaseSpeed * runtime.thinking;
+        const thinkingPresence = Math.max(runtime.thinking, config.state === "thinking" ? 0.25 : 0);
+        runtime.phase +=
+          (deltaFrames / 60) * resolveCloudPhaseRate(runtime.visual.flowSpeed, config.motion.speed);
+        runtime.thinkingPhase +=
+          (deltaFrames / 60) *
+          resolveThinkingPhaseRate(runtime.visual.flowSpeed, config.motion.speed, thinkingPresence);
       }
       const { gl, uniforms } = renderer;
       gl.clearColor(0, 0, 0, 0);
@@ -492,7 +501,7 @@ export function useCloudRenderer({
       gl.uniform1f(uniforms.time, runtime.phase);
       gl.uniform1f(uniforms.thinkingPhase, runtime.thinkingPhase);
       gl.uniform2f(uniforms.resolution, canvas.width, canvas.height);
-      gl.uniform1f(uniforms.intensity, 1.24 * clamp(config.motion.intensity, 0.25, 2));
+      gl.uniform1f(uniforms.motionAmplitude, resolveMotionAmplitude(config.motion.intensity));
       gl.uniform3fv(uniforms.main0, runtime.main.deepest);
       gl.uniform3fv(uniforms.main1, runtime.main.deep);
       gl.uniform3fv(uniforms.main2, runtime.main.base);

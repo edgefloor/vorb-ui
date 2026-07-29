@@ -56,10 +56,7 @@
 .voice-orb {
   --voice-orb-size: clamp(18rem, 48vw, 25rem);
   --voice-orb-ball-scale: 0.96;
-  --voice-orb-control-size: var(
-    --vorb-ui-control-size,
-    var(--orb-ui-control-size, clamp(3.75rem, calc(var(--voice-orb-size) * 0.17), 4.25rem))
-  );
+  --voice-orb-control-size: var(--vorb-ui-control-size, var(--orb-ui-control-size, 2.75rem));
   --voice-orb-control-gap: var(--vorb-ui-control-gap, var(--orb-ui-control-gap, 0.875rem));
   --voice-orb-control-offset-x: var(
     --vorb-ui-control-offset-x,
@@ -139,7 +136,7 @@
     inset 0 0 2rem color-mix(in srgb, var(--voice-orb-tone-deepest) 55%, transparent),
     0 0 calc(0.5rem + 1.8rem * var(--orb-state-glow-intensity))
       color-mix(in srgb, var(--voice-orb-tone-base) 32%, transparent);
-  filter: saturate(calc(0.82 + 0.4 * var(--orb-motion-intensity)));
+  filter: saturate(1.1);
   transform: scale(calc(0.94 + 0.04 * var(--orb-state-expansion)));
   transition:
     filter 600ms ease,
@@ -168,7 +165,7 @@
   filter: brightness(1.08);
   mask: radial-gradient(circle, transparent 0 84%, #000 85% 90%, transparent 91%);
   opacity: 0.06;
-  animation: orb-radial-progress calc(4.8s / max(0.15, var(--orb-motion-speed))) linear infinite;
+  animation: orb-radial-progress calc(4.8s / max(0.01, var(--orb-motion-speed))) linear infinite;
   transition:
     filter 760ms var(--voice-orb-ease),
     opacity 760ms var(--voice-orb-ease);
@@ -207,7 +204,7 @@
   );
   mix-blend-mode: screen;
   opacity: calc(0.16 + 0.28 * var(--orb-state-turbulence));
-  animation: orb-radial-turn calc(18s / max(0.15, var(--orb-motion-speed))) linear infinite;
+  animation: orb-radial-turn calc(18s / max(0.01, var(--orb-motion-speed))) linear infinite;
   transition: opacity 620ms var(--voice-orb-ease);
 }
 
@@ -224,7 +221,7 @@
   mix-blend-mode: multiply;
   opacity: calc(0.2 + 0.42 * var(--orb-state-smoke-density));
   animation-direction: reverse;
-  animation-duration: calc(13s / max(0.15, var(--orb-motion-speed)));
+  animation-duration: calc(13s / max(0.01, var(--orb-motion-speed)));
 }
 
 .voice-orb__radial-ring {
@@ -255,7 +252,7 @@
 }
 
 .voice-orb--radial[data-state="listening"] .voice-orb__radial {
-  transform: scale(calc(0.9 + 0.04 * var(--orb-active-volume)));
+  transform: scale(calc(0.9 + 0.04 * var(--orb-active-volume) * var(--orb-motion-intensity)));
 }
 
 .voice-orb--radial[data-state="listening"] .voice-orb__radial::before {
@@ -280,9 +277,8 @@
 }
 
 .voice-orb--radial[data-state="speaking"] .voice-orb__radial {
-  filter: saturate(calc(1 + 0.45 * var(--orb-motion-intensity)))
-    brightness(calc(1 + 0.12 * var(--orb-active-volume)));
-  transform: scale(calc(0.96 + 0.04 * var(--orb-active-volume)));
+  filter: saturate(1.16) brightness(calc(1 + 0.12 * var(--orb-active-volume)));
+  transform: scale(calc(0.96 + 0.04 * var(--orb-active-volume) * var(--orb-motion-intensity)));
 }
 
 .voice-orb--radial[data-state="speaking"] .voice-orb__radial::before {
@@ -293,7 +289,7 @@
 .voice-orb--radial[data-state="speaking"] .voice-orb__radial-ring {
   inset: 15%;
   opacity: calc(0.48 + 0.42 * var(--orb-active-volume));
-  transform: scale(calc(1 + 0.08 * var(--orb-active-volume)));
+  transform: scale(calc(1 + 0.08 * var(--orb-active-volume) * var(--orb-motion-intensity)));
 }
 
 .voice-orb--radial[data-state="error"] .voice-orb__radial::before {
@@ -324,7 +320,7 @@
   width: 70%;
   aspect-ratio: 1;
   isolation: isolate;
-  filter: saturate(calc(0.88 + 0.26 * var(--orb-motion-intensity)));
+  filter: saturate(1.08);
   transition: filter 700ms var(--voice-orb-ease);
 }
 
@@ -397,9 +393,9 @@
   );
   opacity: calc(0.26 + 0.72 * var(--particle-depth));
   transform-origin: center;
-  animation: orb-circle-particle-drift calc(3.6s / max(0.15, var(--orb-motion-speed))) ease-in-out
+  animation: orb-circle-particle-drift calc(3.6s / max(0.01, var(--orb-motion-speed))) ease-in-out
     infinite alternate both;
-  animation-delay: calc(var(--particle-index) * -47ms);
+  animation-delay: calc(var(--particle-index) * -47ms / max(0.01, var(--orb-motion-speed)));
   transition:
     left 950ms var(--voice-orb-ease),
     top 950ms var(--voice-orb-ease),
@@ -476,12 +472,12 @@
 .voice-orb--circle[data-state="speaking"] .voice-orb__circle-swarm {
   filter: saturate(1.16) brightness(calc(1 + 0.18 * var(--orb-active-volume)))
     drop-shadow(0 0 0.38rem color-mix(in srgb, var(--voice-orb-tone-bright) 42%, transparent));
-  transform: scale(calc(1.02 + 0.08 * var(--orb-active-volume)));
+  transform: scale(calc(1.02 + 0.08 * var(--orb-active-volume) * var(--orb-motion-intensity)));
 }
 
 .voice-orb--circle[data-state="speaking"] .voice-orb__circle-aura {
   opacity: calc(0.34 + 0.36 * var(--orb-active-volume));
-  transform: scale(calc(1.02 + 0.08 * var(--orb-active-volume)));
+  transform: scale(calc(1.02 + 0.08 * var(--orb-active-volume) * var(--orb-motion-intensity)));
 }
 
 .voice-orb--circle[data-state="error"] .voice-orb__circle-swarm i {
@@ -589,7 +585,8 @@
 
 .voice-orb--bars[data-state="listening"] .voice-orb__spectrum-bar {
   --bar-level: calc(
-    22% + 62% * var(--orb-active-volume) * var(--shard-weight) * var(--orb-state-audio-response)
+    22% + 62% * var(--orb-active-volume) * var(--shard-weight) * var(--orb-state-audio-response) *
+      var(--orb-motion-intensity)
   );
 }
 
@@ -602,14 +599,15 @@
     var(--voice-orb-tone-lightest) 100%
   );
   transform-origin: center top;
-  animation: orb-spectrum-listening calc(1.05s / max(0.15, var(--orb-motion-speed))) ease-in-out
+  animation: orb-spectrum-listening calc(1.05s / max(0.01, var(--orb-motion-speed))) ease-in-out
     infinite alternate;
-  animation-delay: calc(var(--shard-index) * 36ms);
+  animation-delay: calc(var(--shard-index) * 36ms / max(0.01, var(--orb-motion-speed)));
 }
 
 .voice-orb--bars[data-state="speaking"] .voice-orb__spectrum-bar {
   --bar-level: calc(
-    24% + 70% * var(--orb-active-volume) * var(--shard-weight) * var(--orb-state-audio-response)
+    24% + 70% * var(--orb-active-volume) * var(--shard-weight) * var(--orb-state-audio-response) *
+      var(--orb-motion-intensity)
   );
 
   filter: brightness(calc(1 + 0.2 * var(--orb-active-volume)));
@@ -622,9 +620,9 @@
 
 .voice-orb--bars[data-state="speaking"] .voice-orb__spectrum-fill::after {
   transform-origin: center bottom;
-  animation: orb-spectrum-speaking calc(0.72s / max(0.15, var(--orb-motion-speed))) ease-in-out
+  animation: orb-spectrum-speaking calc(0.72s / max(0.01, var(--orb-motion-speed))) ease-in-out
     infinite alternate;
-  animation-delay: calc(var(--shard-index) * 28ms);
+  animation-delay: calc(var(--shard-index) * 28ms / max(0.01, var(--orb-motion-speed)));
 }
 
 .voice-orb--bars[data-state="connecting"] .voice-orb__spectrum-bar {
@@ -637,13 +635,13 @@
 }
 
 .voice-orb--bars[data-state="connecting"] .voice-orb__spectrum-fill::after {
-  animation: orb-spectrum-connecting calc(1.25s / max(0.15, var(--orb-motion-speed))) ease-in-out
+  animation: orb-spectrum-connecting calc(1.25s / max(0.01, var(--orb-motion-speed))) ease-in-out
     infinite;
-  animation-delay: calc(var(--shard-index) * 54ms);
+  animation-delay: calc(var(--shard-index) * 54ms / max(0.01, var(--orb-motion-speed)));
 }
 
 .voice-orb--bars[data-state="thinking"] .voice-orb__spectrum-bar {
-  --bar-level: calc(32% + 26% * var(--shard-weight));
+  --bar-level: calc(32% + 26% * var(--shard-weight) * var(--orb-motion-intensity));
 }
 
 .voice-orb--bars[data-state="thinking"] .voice-orb__spectrum-fill {
@@ -652,9 +650,9 @@
 }
 
 .voice-orb--bars[data-state="thinking"] .voice-orb__spectrum-fill::after {
-  animation: orb-spectrum-thinking calc(1.8s / max(0.15, var(--orb-motion-speed)))
+  animation: orb-spectrum-thinking calc(1.8s / max(0.01, var(--orb-motion-speed)))
     cubic-bezier(0.45, 0, 0.25, 1) infinite;
-  animation-delay: calc(var(--shard-index) * 72ms);
+  animation-delay: calc(var(--shard-index) * 72ms / max(0.01, var(--orb-motion-speed)));
 }
 
 .voice-orb--bars[data-state="error"] .voice-orb__spectrum-fill::after {
@@ -664,9 +662,9 @@
     var(--voice-orb-warning-base) 52%,
     var(--voice-orb-warning-bright)
   );
-  animation: orb-spectrum-error calc(0.84s / max(0.15, var(--orb-motion-speed))) steps(2, end)
+  animation: orb-spectrum-error calc(0.84s / max(0.01, var(--orb-motion-speed))) steps(2, end)
     infinite;
-  animation-delay: calc(var(--shard-index) * -43ms);
+  animation-delay: calc(var(--shard-index) * -43ms / max(0.01, var(--orb-motion-speed)));
 }
 
 .voice-orb--bars[data-state="error"] .voice-orb__spectrum-fill {
@@ -855,16 +853,16 @@
 @keyframes orb-circle-particle-drift {
   from {
     transform: translate(
-        calc(-50% + var(--particle-drift-x) * -0.16rem),
-        calc(-50% + var(--particle-drift-y) * -0.16rem)
+        calc(-50% + var(--particle-drift-x) * -0.16rem * var(--orb-motion-intensity)),
+        calc(-50% + var(--particle-drift-y) * -0.16rem * var(--orb-motion-intensity))
       )
       scale(calc(0.78 + 0.2 * var(--particle-depth)));
   }
 
   to {
     transform: translate(
-        calc(-50% + var(--particle-drift-x) * 0.16rem),
-        calc(-50% + var(--particle-drift-y) * 0.16rem)
+        calc(-50% + var(--particle-drift-x) * 0.16rem * var(--orb-motion-intensity)),
+        calc(-50% + var(--particle-drift-y) * 0.16rem * var(--orb-motion-intensity))
       )
       scale(calc(0.94 + 0.24 * var(--particle-depth)));
   }
@@ -876,11 +874,11 @@
   }
 
   52% {
-    transform: scaleY(0.88);
+    transform: scaleY(calc(1 - 0.12 * var(--orb-motion-intensity)));
   }
 
   100% {
-    transform: scaleY(1.04);
+    transform: scaleY(calc(1 + 0.04 * var(--orb-motion-intensity)));
   }
 }
 
@@ -890,11 +888,11 @@
   }
 
   44% {
-    transform: scaleY(0.74);
+    transform: scaleY(calc(1 - 0.26 * var(--orb-motion-intensity)));
   }
 
   100% {
-    transform: scaleY(1.06);
+    transform: scaleY(calc(1 + 0.06 * var(--orb-motion-intensity)));
   }
 }
 
@@ -907,7 +905,7 @@
 
   50% {
     opacity: 0.48;
-    transform: scaleY(0.58);
+    transform: scaleY(calc(1 - 0.42 * var(--orb-motion-intensity)));
   }
 }
 
@@ -920,12 +918,12 @@
 
   42% {
     opacity: 1;
-    transform: scaleY(1.08);
+    transform: scaleY(calc(1 + 0.08 * var(--orb-motion-intensity)));
   }
 
   68% {
     opacity: 0.62;
-    transform: scaleY(0.58);
+    transform: scaleY(calc(1 - 0.42 * var(--orb-motion-intensity)));
   }
 }
 
@@ -933,7 +931,7 @@
   0%,
   100% {
     opacity: 0.34;
-    transform: scaleY(0.72);
+    transform: scaleY(calc(1 - 0.28 * var(--orb-motion-intensity)));
   }
 
   50% {
@@ -1073,26 +1071,19 @@
   position: absolute;
   z-index: 0;
   inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
   border-radius: inherit;
-  background:
-    radial-gradient(
-      ellipse at 32% 38%,
-      color-mix(in srgb, var(--voice-orb-tone-lightest) 76%, transparent),
-      transparent 36%
-    ),
-    radial-gradient(ellipse at 70% 34%, var(--voice-orb-tone-bright), transparent 42%),
-    radial-gradient(ellipse at 42% 72%, var(--voice-orb-tone-deep), transparent 48%),
-    radial-gradient(
-      circle,
-      var(--voice-orb-tone-base),
-      var(--voice-orb-tone-deepest) 72%,
-      transparent 100%
-    );
   filter: drop-shadow(0 0 2.5rem rgb(0 0 0 / 0.48));
-  mask-image: radial-gradient(circle, #000 0 58%, rgb(0 0 0 / 0.82) 74%, transparent 100%);
   opacity: 1;
   pointer-events: none;
   transition: opacity 180ms ease-out;
+}
+
+.voice-orb__canvas-fallback[data-exiting] {
+  opacity: 0;
 }
 
 .voice-orb__canvas--ready {
@@ -1101,6 +1092,330 @@
 
 .voice-orb__canvas--ready + .voice-orb__canvas-fallback {
   opacity: 0;
+}
+
+.voice-orb__fallback-material,
+.voice-orb__fallback-pose,
+.voice-orb__fallback-drift,
+.voice-orb__fallback-audio,
+.voice-orb__fallback-thinking-cell {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.voice-orb__fallback-pose {
+  transition: transform 420ms var(--voice-orb-ease);
+}
+
+.voice-orb__fallback-drift {
+  animation-duration: var(--orb-flow-duration, 10s);
+  animation-iteration-count: infinite;
+  animation-timing-function: linear;
+}
+
+.voice-orb__fallback-drift--a {
+  animation-name: voice-orb-fallback-drift-a;
+}
+
+.voice-orb__fallback-drift--b {
+  animation-name: voice-orb-fallback-drift-b;
+  animation-duration: calc(var(--orb-flow-duration, 10s) * 0.83);
+}
+
+.voice-orb__fallback-drift--c {
+  animation-name: voice-orb-fallback-drift-c;
+  animation-duration: calc(var(--orb-flow-duration, 10s) * 1.17);
+}
+
+.voice-orb__fallback-audio {
+  transition: transform 150ms ease-out;
+}
+
+.voice-orb[data-state="idle"] .voice-orb__fallback-pose {
+  transform: scale(
+    calc(0.91 + var(--orb-state-expansion) * 0.075 - var(--orb-state-center-pull) * 0.018)
+  );
+}
+
+.voice-orb[data-state="connecting"] .voice-orb__fallback-pose {
+  transform: translateY(-1.5%) scale(calc(0.89 + var(--orb-state-center-pull) * 0.025));
+}
+
+.voice-orb[data-state="listening"] .voice-orb__fallback-pose {
+  transform: translateY(1.5%)
+    scale(calc(0.91 + var(--orb-state-expansion) * 0.055 - var(--orb-state-center-pull) * 0.035));
+}
+
+.voice-orb[data-state="thinking"] .voice-orb__fallback-pose {
+  transform: rotate(-1.5deg) scale(calc(0.92 + var(--orb-state-vortex-strength) * 0.018));
+}
+
+.voice-orb[data-state="speaking"] .voice-orb__fallback-pose {
+  transform: translateY(-0.5%) scale(calc(0.92 + var(--orb-state-expansion) * 0.045));
+}
+
+.voice-orb[data-state="error"] .voice-orb__fallback-pose--shell {
+  transform: skewX(calc(var(--orb-state-warning-distortion) * -2.2deg)) scale(0.92);
+}
+
+.voice-orb[data-state="error"] .voice-orb__fallback-pose--gas {
+  transform: translateX(calc(var(--orb-state-warning-distortion) * 2.5%)) skewY(-2deg) scale(0.9);
+}
+
+.voice-orb[data-state="error"] .voice-orb__fallback-pose--vapor {
+  transform: translateX(calc(var(--orb-state-warning-distortion) * 3%)) scale(0.92);
+}
+
+.voice-orb[data-state="listening"] .voice-orb__fallback-audio--body {
+  transform: translateY(calc(var(--orb-perceptual-audio) * 2.5%))
+    scale(
+      calc(
+        1 - var(--orb-perceptual-audio) * var(--orb-state-audio-response) *
+          var(--orb-motion-intensity) * 0.035
+      )
+    );
+}
+
+.voice-orb[data-state="listening"] .voice-orb__fallback-audio--density {
+  transform: translateY(calc(var(--orb-perceptual-audio) * 3.5%))
+    scale(
+      calc(
+        1 + var(--orb-perceptual-audio) * var(--orb-state-center-pull) *
+          var(--orb-motion-intensity) * 0.055
+      )
+    );
+}
+
+.voice-orb[data-state="speaking"] .voice-orb__fallback-audio--body {
+  transform: translate(
+      calc(var(--orb-output-volume) * var(--orb-state-audio-response) * 2.2%),
+      calc(var(--orb-output-volume) * -1.4%)
+    )
+    scale(
+      calc(
+        1 + var(--orb-perceptual-audio) * var(--orb-state-audio-response) *
+          var(--orb-motion-intensity) * 0.045
+      )
+    );
+}
+
+.voice-orb[data-state="speaking"] .voice-orb__fallback-audio--density {
+  transform: translateX(calc(var(--orb-output-volume) * var(--orb-state-audio-response) * -2.5%));
+}
+
+.voice-orb__fallback-shell-envelope {
+  opacity: calc(0.56 + var(--orb-state-smoke-density) * 0.34);
+}
+
+.voice-orb__fallback-density--deep {
+  fill: var(--voice-orb-tone-deepest);
+  opacity: calc(0.24 + var(--orb-state-smoke-density) * 0.3);
+}
+
+.voice-orb__fallback-density--body {
+  fill: var(--voice-orb-tone-base);
+  opacity: calc(0.22 + var(--orb-state-smoke-density) * 0.28);
+}
+
+.voice-orb__fallback-shell-highlight {
+  stroke-width: 5;
+  stroke-linecap: round;
+  stroke-dasharray: 0.38 0.62;
+  stroke-dashoffset: 0;
+  opacity: calc(0.22 + var(--orb-state-glow-intensity) * 0.55);
+  animation: voice-orb-fallback-highlight var(--orb-glow-duration, 8s) linear infinite;
+}
+
+.voice-orb__fallback-shell-shadow {
+  fill: var(--voice-orb-tone-deepest);
+  opacity: 0.28;
+}
+
+.voice-orb__fallback-gas-plume {
+  opacity: calc(0.42 + var(--orb-state-smoke-density) * 0.38);
+}
+
+.voice-orb__fallback-gas-plume--b {
+  fill: var(--voice-orb-tone-bright);
+  opacity: calc(0.18 + var(--orb-state-smoke-density) * 0.28);
+}
+
+.voice-orb__fallback-gas-plume--c {
+  fill: var(--voice-orb-tone-deep);
+  opacity: calc(0.3 + var(--orb-state-smoke-density) * 0.28);
+}
+
+.voice-orb__fallback-gas-ridge {
+  stroke-width: 7;
+  stroke-linecap: round;
+  opacity: calc(0.25 + var(--orb-state-glow-intensity) * 0.42);
+}
+
+.voice-orb__fallback-gas-wisp {
+  fill: var(--voice-orb-tone-bright);
+  opacity: 0.5;
+}
+
+.voice-orb__fallback-vapor-band,
+.voice-orb__fallback-vapor-wisp {
+  stroke-linecap: round;
+}
+
+.voice-orb__fallback-vapor-band--broad {
+  stroke-width: 72;
+  opacity: calc(0.38 + var(--orb-state-smoke-density) * 0.36);
+}
+
+.voice-orb__fallback-vapor-band--mid {
+  stroke-width: 35;
+  opacity: calc(0.42 + var(--orb-state-smoke-density) * 0.38);
+}
+
+.voice-orb__fallback-vapor-band--ridge {
+  stroke-width: 9;
+  opacity: calc(0.58 + var(--orb-state-glow-intensity) * 0.32);
+}
+
+.voice-orb__fallback-vapor-wisp {
+  stroke-width: 13;
+  opacity: 0.64;
+}
+
+.voice-orb__fallback-vapor-wisp--detached {
+  stroke-width: 19;
+  opacity: 0.42;
+}
+
+.voice-orb__fallback-flow {
+  opacity: 0;
+  transition: opacity 260ms ease;
+}
+
+.voice-orb__fallback-flow path {
+  fill: none;
+  stroke: var(--voice-orb-tone-lightest);
+  stroke-linecap: round;
+  stroke-width: 3.6;
+  animation-play-state: paused;
+  vector-effect: non-scaling-stroke;
+}
+
+.voice-orb[data-state="connecting"] .voice-orb__fallback-flow--connecting,
+.voice-orb[data-state="listening"] .voice-orb__fallback-flow--listening,
+.voice-orb[data-state="thinking"] .voice-orb__fallback-flow--thinking,
+.voice-orb[data-state="speaking"] .voice-orb__fallback-flow--speaking {
+  opacity: 1;
+}
+
+.voice-orb[data-state="connecting"] .voice-orb__fallback-flow--connecting path,
+.voice-orb[data-state="listening"] .voice-orb__fallback-flow--listening path,
+.voice-orb[data-state="speaking"] .voice-orb__fallback-flow--speaking path,
+.voice-orb[data-state="thinking"] .voice-orb__fallback-thinking-cell {
+  animation-play-state: running;
+}
+
+.voice-orb__fallback-flow--connecting path {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  opacity: 0.48;
+  animation: voice-orb-fallback-connect calc(var(--orb-flow-duration, 10s) * 0.36) ease-out infinite;
+}
+
+.voice-orb__fallback-flow--listening path {
+  stroke-dasharray: 0.075 0.925;
+  stroke-dashoffset: 1;
+  opacity: calc(0.2 + var(--orb-input-volume) * var(--orb-state-audio-response) * 0.72);
+  animation: voice-orb-fallback-inbound calc(var(--orb-flow-duration, 10s) * 0.19) linear infinite;
+}
+
+.voice-orb__fallback-flow--listening path:nth-child(2) {
+  animation-delay: -0.65s;
+}
+
+.voice-orb__fallback-flow--listening path:nth-child(3) {
+  animation-delay: -1.15s;
+}
+
+.voice-orb__fallback-flow--speaking path {
+  stroke-dasharray: 0.1 0.9;
+  opacity: calc(0.24 + var(--orb-output-volume) * var(--orb-state-audio-response) * 0.76);
+  animation: voice-orb-fallback-outbound calc(var(--orb-flow-duration, 10s) * 0.17) linear infinite;
+}
+
+.voice-orb__fallback-flow--speaking path:nth-child(2) {
+  animation-delay: -0.48s;
+}
+
+.voice-orb__fallback-flow--speaking path:nth-child(3) {
+  animation-delay: -0.9s;
+}
+
+.voice-orb__fallback-thinking-cell {
+  animation-duration: calc(var(--orb-flow-duration, 10s) * 0.34);
+  animation-iteration-count: infinite;
+  animation-play-state: paused;
+  animation-timing-function: linear;
+}
+
+.voice-orb__fallback-thinking-cell path {
+  stroke-dasharray: 0.19 0.12;
+  opacity: calc(0.28 + var(--orb-state-vortex-strength) * 0.48);
+}
+
+.voice-orb__fallback-thinking-cell--1 {
+  animation-name: voice-orb-fallback-cell-clockwise;
+}
+
+.voice-orb__fallback-thinking-cell--2 {
+  animation-name: voice-orb-fallback-cell-counter;
+  animation-duration: calc(var(--orb-flow-duration, 10s) * 0.29);
+}
+
+.voice-orb__fallback-thinking-cell--3 {
+  animation-name: voice-orb-fallback-cell-clockwise;
+  animation-duration: calc(var(--orb-flow-duration, 10s) * 0.39);
+}
+
+.voice-orb__fallback-failure {
+  opacity: 0;
+  transition: opacity 180ms ease-out;
+}
+
+.voice-orb[data-state="error"] .voice-orb__fallback-failure {
+  opacity: 1;
+}
+
+.voice-orb__fallback-failure path {
+  fill: none;
+  stroke-linecap: round;
+}
+
+.voice-orb__fallback-failure--shell path {
+  stroke: var(--voice-orb-warning-bright);
+  stroke-width: calc(2 + var(--orb-state-warning-distortion) * 5);
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+}
+
+.voice-orb[data-state="error"] .voice-orb__fallback-failure--shell path {
+  animation: voice-orb-fallback-fracture 520ms var(--voice-orb-ease) forwards;
+}
+
+.voice-orb__fallback-failure--gas path:first-child {
+  stroke: var(--voice-orb-tone-deepest);
+  stroke-width: calc(14 + var(--orb-state-warning-distortion) * 12);
+}
+
+.voice-orb__fallback-failure--gas path:last-child {
+  stroke: var(--voice-orb-warning-base);
+  stroke-width: calc(2 + var(--orb-state-warning-distortion) * 3);
+  opacity: 0.62;
+}
+
+.voice-orb__fallback-failure--vapor path {
+  stroke: var(--voice-orb-warning-bright);
+  stroke-width: calc(6 + var(--orb-state-warning-distortion) * 5);
+  opacity: 0.74;
 }
 
 .voice-orb--cloud[data-cloud-mode="gas"] .voice-orb__visual::after,
@@ -1126,21 +1441,129 @@
     drop-shadow(0 0 1.9rem color-mix(in srgb, var(--voice-orb-tone-base) 26%, transparent));
 }
 
-.voice-orb--cloud[data-cloud-mode="gas"] .voice-orb__canvas-fallback,
-.voice-orb--cloud[data-cloud-mode="vapor"] .voice-orb__canvas-fallback {
-  background:
-    radial-gradient(
-      ellipse at 36% 42%,
-      color-mix(in srgb, var(--voice-orb-tone-lightest) 64%, transparent),
-      transparent 28%
-    ),
-    radial-gradient(
-      ellipse at 64% 56%,
-      color-mix(in srgb, var(--voice-orb-tone-bright) 74%, transparent),
-      transparent 38%
-    ),
-    radial-gradient(ellipse at 48% 52%, var(--voice-orb-tone-base), transparent 66%);
-  mask-image: radial-gradient(ellipse 48% 42%, #000 0 34%, rgb(0 0 0 / 0.72) 58%, transparent 100%);
+@keyframes voice-orb-fallback-drift-a {
+  0%,
+  100% {
+    transform: translate(
+        calc(-0.8% * var(--orb-motion-intensity)),
+        calc(0.2% * var(--orb-motion-intensity))
+      )
+      rotate(calc(-1.5deg * var(--orb-motion-intensity)));
+  }
+  32% {
+    transform: translate(
+        calc(1.2% * var(--orb-motion-intensity)),
+        calc(-0.9% * var(--orb-motion-intensity))
+      )
+      rotate(calc(1.2deg * var(--orb-motion-intensity)));
+  }
+  68% {
+    transform: translate(
+        calc(0.4% * var(--orb-motion-intensity)),
+        calc(1.1% * var(--orb-motion-intensity))
+      )
+      rotate(calc(0.2deg * var(--orb-motion-intensity)));
+  }
+}
+
+@keyframes voice-orb-fallback-drift-b {
+  0%,
+  100% {
+    transform: translate(
+        calc(0.8% * var(--orb-motion-intensity)),
+        calc(-0.4% * var(--orb-motion-intensity))
+      )
+      rotate(calc(1.2deg * var(--orb-motion-intensity)));
+  }
+  38% {
+    transform: translate(
+        calc(-1.3% * var(--orb-motion-intensity)),
+        calc(0.7% * var(--orb-motion-intensity))
+      )
+      rotate(calc(-1.5deg * var(--orb-motion-intensity)));
+  }
+  72% {
+    transform: translate(
+        calc(0.2% * var(--orb-motion-intensity)),
+        calc(1% * var(--orb-motion-intensity))
+      )
+      rotate(calc(0.6deg * var(--orb-motion-intensity)));
+  }
+}
+
+@keyframes voice-orb-fallback-drift-c {
+  0%,
+  100% {
+    transform: translate(
+      calc(-0.4% * var(--orb-motion-intensity)),
+      calc(-0.8% * var(--orb-motion-intensity))
+    );
+  }
+  44% {
+    transform: translate(
+      calc(1% * var(--orb-motion-intensity)),
+      calc(0.5% * var(--orb-motion-intensity))
+    );
+  }
+  76% {
+    transform: translate(
+      calc(-0.6% * var(--orb-motion-intensity)),
+      calc(1% * var(--orb-motion-intensity))
+    );
+  }
+}
+
+@keyframes voice-orb-fallback-highlight {
+  to {
+    stroke-dashoffset: -1;
+  }
+}
+
+@keyframes voice-orb-fallback-connect {
+  0% {
+    stroke-dashoffset: 1;
+    opacity: 0;
+  }
+  24%,
+  56% {
+    stroke-dashoffset: 0;
+    opacity: 0.58;
+  }
+  72%,
+  100% {
+    stroke-dashoffset: 0;
+    opacity: 0;
+  }
+}
+
+@keyframes voice-orb-fallback-inbound {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes voice-orb-fallback-outbound {
+  to {
+    stroke-dashoffset: -1;
+  }
+}
+
+@keyframes voice-orb-fallback-cell-clockwise {
+  to {
+    transform: rotate(calc(1turn * var(--orb-state-vortex-strength)));
+  }
+}
+
+@keyframes voice-orb-fallback-cell-counter {
+  to {
+    transform: rotate(calc(-1turn * var(--orb-state-vortex-strength)));
+  }
+}
+
+@keyframes voice-orb-fallback-fracture {
+  to {
+    stroke-dashoffset: 0;
+  }
 }
 
 .voice-orb__control-slot {
@@ -1194,36 +1617,37 @@
   position: relative;
   z-index: 2;
   display: grid;
-  width: var(--voice-orb-control-size);
+  width: auto;
+  min-width: 7.75rem;
   height: var(--voice-orb-control-size);
-  padding: 0;
-  border: 1px solid color-mix(in srgb, var(--voice-orb-tone-lightest) 25%, transparent);
+  padding: 0 1rem;
+  border: 1px solid rgb(238 237 233 / 0.16);
   border-radius: 9999px;
+  grid-auto-flow: column;
+  gap: 0.55rem;
   place-items: center;
-  background: color-mix(in srgb, var(--voice-orb-tone-deepest) 80%, transparent);
-  box-shadow:
-    0 -0.4rem 1.15rem color-mix(in srgb, var(--voice-orb-tone-base) 25%, transparent),
-    0 0.8rem 1.6rem rgb(0 0 0 / 0.48),
-    inset 0 1px 0 rgb(255 255 255 / 0.16),
-    inset 0 -0.35rem 0.9rem rgb(0 0 0 / 0.22);
-  color: var(--voice-orb-tone-lightest);
+  background: #151514;
+  box-shadow: 0 0.65rem 1.8rem rgb(0 0 0 / 0.32);
+  color: #e4e3dd;
+  font-family: inherit;
+  font-size: 0.61rem;
+  font-weight: 560;
+  letter-spacing: 0.01em;
+  line-height: 1;
   cursor: pointer;
   transition:
     background-color 180ms ease,
     border-color 180ms ease,
     box-shadow 180ms ease,
     transform 180ms var(--voice-orb-ease);
-  backdrop-filter: blur(12px) saturate(1.18);
+  backdrop-filter: none;
 }
 
 .voice-orb__control:hover:not(:disabled) {
-  border-color: color-mix(in srgb, var(--voice-orb-tone-lightest) 38%, transparent);
-  background: color-mix(in srgb, var(--voice-orb-tone-deep) 88%, transparent);
-  box-shadow:
-    0 -0.45rem 1.25rem color-mix(in srgb, var(--voice-orb-tone-base) 30%, transparent),
-    0 0.9rem 1.8rem rgb(0 0 0 / 0.52),
-    inset 0 1px 0 rgb(255 255 255 / 0.22);
-  transform: translateY(-2px);
+  border-color: rgb(238 237 233 / 0.28);
+  background: #1c1c1a;
+  box-shadow: 0 0.75rem 2rem rgb(0 0 0 / 0.36);
+  transform: translateY(-1px);
 }
 
 .voice-orb__control:active:not(:disabled) {
@@ -1231,78 +1655,65 @@
 }
 
 .voice-orb__control:focus-visible {
-  outline: 3px solid var(--voice-orb-tone-bright);
-  outline-offset: 4px;
+  outline: 2px solid #e4e3dd;
+  outline-offset: 3px;
 }
 
 .voice-orb__control:disabled {
   cursor: wait;
-  opacity: 0.8;
-}
-
-.voice-orb__control[data-mode="end"] {
-  border-color: color-mix(in srgb, var(--voice-orb-warning-bright) 42%, transparent);
-  background: color-mix(in srgb, var(--voice-orb-warning-deep) 84%, transparent);
-}
-
-.voice-orb__control[data-mode="end"]:hover:not(:disabled) {
-  background: color-mix(
-    in srgb,
-    var(--voice-orb-warning-base) 92%,
-    var(--voice-orb-warning-deepest)
-  );
-}
-
-.voice-orb__control[data-mode="retry"] {
-  background: color-mix(in srgb, var(--voice-orb-tone-deepest) 90%, transparent);
+  opacity: 0.72;
 }
 
 .voice-orb__control[data-appearance="solid"] {
-  border-color: color-mix(in srgb, var(--voice-orb-tone-lightest) 42%, transparent);
-  background: var(--voice-orb-tone-deep);
-  box-shadow:
-    0 0.65rem 1.4rem rgb(0 0 0 / 0.42),
-    inset 0 1px 0 rgb(255 255 255 / 0.14);
+  border-color: #343431;
+  background: #e3e2dc;
+  box-shadow: 0 0.65rem 1.8rem rgb(0 0 0 / 0.38);
+  color: #111110;
   backdrop-filter: none;
-}
-
-.voice-orb__control[data-appearance="solid"][data-mode="end"] {
-  background: var(--voice-orb-warning-deep);
 }
 
 .voice-orb__control[data-appearance="solid"]:hover:not(:disabled) {
-  background: var(--voice-orb-tone-base);
-  box-shadow:
-    0 0.8rem 1.6rem rgb(0 0 0 / 0.48),
-    inset 0 1px 0 rgb(255 255 255 / 0.2);
-}
-
-.voice-orb__control[data-appearance="solid"][data-mode="end"]:hover:not(:disabled) {
-  background: var(--voice-orb-warning-base);
+  border-color: #454542;
+  background: #f0efe9;
+  box-shadow: 0 0.75rem 2rem rgb(0 0 0 / 0.42);
 }
 
 .voice-orb__control[data-appearance="minimal"] {
-  border-color: color-mix(in srgb, var(--voice-orb-tone-lightest) 42%, transparent);
-  background: rgb(0 0 0 / 0.12);
+  border-color: rgb(238 237 233 / 0.14);
+  background: #111110;
   box-shadow: none;
   backdrop-filter: none;
 }
 
-.voice-orb__control[data-appearance="minimal"][data-mode="end"] {
-  border-color: color-mix(in srgb, var(--voice-orb-warning-bright) 58%, transparent);
-  background: rgb(0 0 0 / 0.12);
-  color: var(--voice-orb-warning-bright);
+.voice-orb__control[data-appearance="glass"] {
+  border-color: rgb(238 237 233 / 0.18);
+  background: rgb(20 20 19 / 0.76);
+  box-shadow: 0 0.65rem 1.8rem rgb(0 0 0 / 0.32);
+  backdrop-filter: blur(10px);
 }
 
 .voice-orb__control[data-appearance="minimal"]:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--voice-orb-tone-lightest) 8%, transparent);
+  border-color: rgb(238 237 233 / 0.24);
+  background: #181817;
   box-shadow: none;
+}
+
+.voice-orb__control[data-mode="end"] {
+  border-color: rgb(255 142 131 / 0.28);
+  background: #211312;
+  color: #ffaaa2;
+}
+
+.voice-orb__control[data-mode="end"]:hover:not(:disabled) {
+  border-color: rgb(255 142 131 / 0.38);
+  background: #2a1715;
 }
 
 .voice-orb__icon {
   display: block;
-  width: min(1.5rem, 42%);
-  height: min(1.5rem, 42%);
+  width: 0.9rem;
+  height: 0.9rem;
+  flex: none;
 }
 
 .voice-orb__icon svg {
@@ -1313,6 +1724,12 @@
 
 .voice-orb__icon {
   animation: voice-orb-icon-in 240ms ease-out both;
+}
+
+.voice-orb__control-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .voice-orb__hangup {
@@ -1430,15 +1847,27 @@
   .voice-orb__icon,
   .voice-orb__status-dot,
   .voice-orb__visual::before,
-  .voice-orb__visual::after {
+  .voice-orb__visual::after,
+  .voice-orb__fallback-drift,
+  .voice-orb__fallback-flow path,
+  .voice-orb__fallback-thinking-cell,
+  .voice-orb__fallback-shell-highlight,
+  .voice-orb__fallback-failure path {
     animation: none !important;
   }
 
   .voice-orb__visual,
   .voice-orb__canvas,
   .voice-orb__canvas-fallback,
+  .voice-orb__fallback-pose,
+  .voice-orb__fallback-audio,
+  .voice-orb__fallback-flow,
   .voice-orb__control {
     transition: none;
+  }
+
+  .voice-orb__fallback-flow path {
+    stroke-dashoffset: 0;
   }
 }
 
@@ -1446,15 +1875,27 @@
 .voice-orb--reduced-motion .voice-orb__icon,
 .voice-orb--reduced-motion .voice-orb__status-dot,
 .voice-orb--reduced-motion .voice-orb__visual::before,
-.voice-orb--reduced-motion .voice-orb__visual::after {
+.voice-orb--reduced-motion .voice-orb__visual::after,
+.voice-orb[data-motion-level="static"] .voice-orb__fallback-drift,
+.voice-orb[data-motion-level="static"] .voice-orb__fallback-flow path,
+.voice-orb[data-motion-level="static"] .voice-orb__fallback-thinking-cell,
+.voice-orb[data-motion-level="static"] .voice-orb__fallback-shell-highlight,
+.voice-orb[data-motion-level="static"] .voice-orb__fallback-failure path {
   animation: none !important;
 }
 
 .voice-orb--reduced-motion .voice-orb__visual,
 .voice-orb--reduced-motion .voice-orb__canvas,
 .voice-orb--reduced-motion .voice-orb__canvas-fallback,
+.voice-orb[data-motion-level="static"] .voice-orb__fallback-pose,
+.voice-orb[data-motion-level="static"] .voice-orb__fallback-audio,
+.voice-orb[data-motion-level="static"] .voice-orb__fallback-flow,
 .voice-orb--reduced-motion .voice-orb__control {
   transition: none;
+}
+
+.voice-orb[data-motion-level="static"] .voice-orb__fallback-flow path {
+  stroke-dashoffset: 0;
 }
 
 .voice-orb--reduced-motion {
@@ -1466,4 +1907,51 @@
 .voice-orb--reduced-motion .voice-orb__circle-swarm i,
 .voice-orb--reduced-motion .voice-orb__spectrum-fill::after {
   animation-play-state: paused !important;
+}
+
+.voice-orb[data-motion-level="static"] .voice-orb__radial::before,
+.voice-orb[data-motion-level="static"] .voice-orb__radial-field,
+.voice-orb[data-motion-level="static"] .voice-orb__circle-swarm i,
+.voice-orb[data-motion-level="static"] .voice-orb__spectrum-fill::after {
+  animation-play-state: paused !important;
+}
+
+@media (forced-colors: active) {
+  .voice-orb__canvas-fallback {
+    filter: none !important;
+  }
+
+  .voice-orb__fallback-material path {
+    filter: none;
+  }
+
+  .voice-orb__fallback-shell-envelope {
+    fill: Canvas;
+    stroke: CanvasText;
+    stroke-width: 3;
+  }
+
+  .voice-orb__fallback-density,
+  .voice-orb__fallback-shell-shadow,
+  .voice-orb__fallback-gas-ridge,
+  .voice-orb__fallback-gas-wisp {
+    display: none;
+  }
+
+  .voice-orb__fallback-gas-plume {
+    fill: none;
+    stroke: CanvasText;
+    stroke-width: 5;
+  }
+
+  .voice-orb__fallback-vapor-band,
+  .voice-orb__fallback-vapor-wisp,
+  .voice-orb__fallback-shell-highlight {
+    stroke: CanvasText;
+  }
+
+  .voice-orb__fallback-flow path,
+  .voice-orb__fallback-failure path {
+    stroke: Highlight;
+  }
 }

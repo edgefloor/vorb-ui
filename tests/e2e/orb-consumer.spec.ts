@@ -39,10 +39,10 @@ test("runs adapter start and stop through the shared control", async ({ page }) 
   await page.goto("/");
 
   await expect(page.getByTestId("adapter-state")).toHaveText("idle");
-  await page.getByRole("button", { name: "Start voice session" }).click();
+  await page.getByRole("button", { name: "Start call" }).click();
   await expect(page.getByTestId("adapter-state")).toHaveText("listening");
   await expect(page.getByTestId("adapter-input-volume")).toHaveText("0.42");
-  await page.getByRole("button", { name: "Stop voice session" }).click();
+  await page.getByRole("button", { name: "End call" }).click();
   await expect(page.getByTestId("adapter-state")).toHaveText("idle");
 
   expect(browserErrors).toEqual([]);

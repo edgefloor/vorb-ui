@@ -12,7 +12,7 @@ export const FRAGMENT_SHADER = `
   uniform float uTime;
   uniform float uThinkingPhase;
   uniform vec2 uResolution;
-  uniform float uIntensity;
+  uniform float uMotionAmplitude;
   uniform vec3 uMain0;
   uniform vec3 uMain1;
   uniform vec3 uMain2;
@@ -144,6 +144,10 @@ export const FRAGMENT_SHADER = `
     float glowPulseSpeed = uVisual2.y;
     float warningDistortion = uVisual2.z;
     float tonePosition = uVisual2.w;
+    // Intensity is a deformation control. It must never alter luminance,
+    // opacity, or the resolved color ramp.
+    float motionAmplitude = clamp(uMotionAmplitude, 0.25, 2.0);
+    float materialMotionAmplitude = 0.5 + motionAmplitude * 0.5;
     vec3 primaryColor = sampleRamp(
       uMain0,
       uMain1,
@@ -181,6 +185,8 @@ export const FRAGMENT_SHADER = `
     // Audio-driven speed changes therefore stay continuous instead of jumping.
     float phaseTime = uTime;
     float motionTime = phaseTime;
+    // The renderer already applies flow speed to both clocks. Keeping shader
+    // time neutral makes the public speed multiplier linear for every state.
     float thinkingTime = uThinkingPhase;
     float unavailable = uUnavailable;
     float density = mix(smokeDensity, 0.32, unavailable * 0.62);
@@ -202,7 +208,7 @@ export const FRAGMENT_SHADER = `
         sin(angle * 7.0 + motionTime * 0.08 + 4.2) * 0.18
       ) *
       (0.003 + outputDrive * 0.004 + outputTransient * 0.006);
-    float stateContour =
+    float stateContourMotion =
       thinkingFormation *
         sin(angle * 2.0 - motionTime * 0.38) *
         0.004 +
@@ -244,10 +250,14 @@ export const FRAGMENT_SHADER = `
             outputTransient *
             0.65
         );
-    voiceEdgeMotion = clamp(voiceEdgeMotion, -0.012, 0.012);
+    voiceEdgeMotion = clamp(
+      voiceEdgeMotion * motionAmplitude,
+      -0.018,
+      0.018
+    );
     float radiusMotion =
       stateSize +
-      stateContour +
+      stateContourMotion * motionAmplitude +
       voiceEdgeMotion;
 
     float organic =
@@ -444,16 +454,25 @@ export const FRAGMENT_SHADER = `
     float thoughtAngleB = atan(thoughtDeltaB.y, thoughtDeltaB.x);
     float thoughtAngleC = atan(thoughtDeltaC.y, thoughtDeltaC.x);
     float thoughtSpinA =
-      (0.58 + sin(thinkingTime * 0.39) * 0.1) *
+      (
+        0.54 +
+        sin(thinkingTime * 0.47) * 0.16
+      ) *
       thinkingFormation *
       vortexStrength;
     float thoughtSpinB =
-      -(0.5 + sin(thinkingTime * 0.33 + 1.7) * 0.09) *
+      -(
+        0.47 +
+        sin(thinkingTime * 0.41 + 1.7) * 0.14
+      ) *
       thinkingFormation *
       vortexStrength *
       smoothstep(1.25, 1.75, vortexCount);
     float thoughtSpinC =
-      (0.44 + sin(thinkingTime * 0.29 + 3.4) * 0.08) *
+      (
+        0.41 +
+        sin(thinkingTime * 0.37 + 3.4) * 0.12
+      ) *
       thinkingFormation *
       vortexStrength *
       smoothstep(2.25, 2.75, vortexCount);
@@ -483,14 +502,14 @@ export const FRAGMENT_SHADER = `
       (
         vec2(-thoughtDeltaA.y, thoughtDeltaA.x) *
           thoughtFalloffA *
-          0.34 -
+          0.42 -
         vec2(-thoughtDeltaB.y, thoughtDeltaB.x) *
           thoughtFalloffB *
-          0.31 *
+          0.38 *
           smoothstep(1.25, 1.75, vortexCount) +
         vec2(-thoughtDeltaC.y, thoughtDeltaC.x) *
           thoughtFalloffC *
-          0.28 *
+          0.34 *
           smoothstep(2.25, 2.75, vortexCount)
       ) *
       thinkingFormation *
@@ -718,12 +737,15 @@ export const FRAGMENT_SHADER = `
     vec2 errorSplit =
       vec2(errorSide * 0.038, -errorSide * 0.014) * wError;
     vec2 flow =
-      connectingField +
-      listeningField +
-      thinkingField +
-      speakingField +
-      errorSplit +
-      idleDrift;
+      (
+        connectingField +
+        listeningField +
+        thinkingField +
+        speakingField +
+        errorSplit +
+        idleDrift
+      ) *
+      motionAmplitude;
 
     float warpX = fbm(base + flow + vec2(1.7, 4.2));
     float warpY = fbm(base - flow * 0.7 + vec2(8.3, 2.1));
@@ -763,16 +785,16 @@ export const FRAGMENT_SHADER = `
           fbm(
             base * 0.7 +
               vec2(
-                thinkingTime * 0.18,
-                sin(thinkingTime * 0.61) * 0.7
+                thinkingTime * 0.31,
+                sin(thinkingTime * 0.74) * 0.76
               ) +
               1.8
           ),
           fbm(
             base * 0.76 +
               vec2(
-                cos(thinkingTime * 0.73) * 0.65,
-                -thinkingTime * 0.16
+                cos(thinkingTime * 0.86) * 0.72,
+                -thinkingTime * 0.29
               ) +
               6.4
           )
@@ -780,7 +802,7 @@ export const FRAGMENT_SHADER = `
         0.5
       ) *
       thinkingFormation *
-      (0.035 + vortexStrength * 0.055);
+      (0.05 + vortexStrength * 0.075);
     vec2 voiceOffset =
       (inputOffset + outputOffset) *
       (1.0 - unavailable * 0.82);
@@ -874,14 +896,15 @@ export const FRAGMENT_SHADER = `
     vec2 warped =
       base +
       flow +
-      thinkingMixWarp +
-      voiceOffset +
-      organicVoiceWarp +
-      listeningCarry +
-      thinkingCarry +
-      speakingCarry +
+      thinkingMixWarp * motionAmplitude +
+      voiceOffset * motionAmplitude +
+      organicVoiceWarp * motionAmplitude +
+      listeningCarry * motionAmplitude +
+      thinkingCarry * motionAmplitude +
+      speakingCarry * motionAmplitude +
       (vec2(warpX, warpY) - 0.5) *
-        (0.65 + turbulence * 0.65);
+        (0.65 + turbulence * 0.65) *
+        materialMotionAmplitude;
 
     vec2 thinkingLayerDrift =
       vec2(
@@ -889,7 +912,8 @@ export const FRAGMENT_SHADER = `
         cos(thinkingTime * 0.77)
       ) *
       thinkingFormation *
-      0.24;
+      0.29 *
+      motionAmplitude;
     float backCloud = fbm(
       warped * 0.72 +
         vec2(-motionTime * 0.016, motionTime * 0.012) +
@@ -918,8 +942,8 @@ export const FRAGMENT_SHADER = `
       listeningCompression * 0.18 -
       0.48;
     float thinkingComposition =
-      thoughtFolds * 0.32 +
-      (thoughtChannel - 0.5) * 0.22;
+      thoughtFolds * 0.39 +
+      (thoughtChannel - 0.5) * 0.27;
     float speakingComposition =
       speakingDrift * 0.18 +
       speakBody * 0.24 +
@@ -1207,12 +1231,18 @@ export const FRAGMENT_SHADER = `
       sin(angle * 5.0 + motionTime * 0.087 + gasEdgeCoarse * 3.2) *
         0.024 +
       sin(angle * 9.0 - motionTime * 0.064) * 0.011;
-    float gasBoundary =
+    float gasBoundary = clamp(
       cloudRadius +
-      0.025 * ballScale +
-      (gasEdgeCoarse - 0.5) * 0.145 * ballScale +
-      (gasEdgeFine - 0.5) * 0.052 * ballScale +
-      gasLobes * ballScale;
+        0.025 * ballScale +
+        (
+          (gasEdgeCoarse - 0.5) * 0.145 * ballScale +
+          (gasEdgeFine - 0.5) * 0.052 * ballScale +
+          gasLobes * ballScale
+        ) *
+          materialMotionAmplitude,
+      0.24 * ballScale,
+      0.48 * ballScale
+    );
     float gasEnvelope =
       1.0 -
       smoothstep(
@@ -1268,11 +1298,17 @@ export const FRAGMENT_SHADER = `
       0.96
     );
     roughGasAlpha = pow(roughGasAlpha, 0.72);
-    float vaporBoundary =
+    float vaporBoundary = clamp(
       cloudRadius +
-      0.04 * ballScale +
-      (gasEdgeCoarse - 0.5) * 0.105 * ballScale +
-      gasLobes * 0.58 * ballScale;
+        0.04 * ballScale +
+        (
+          (gasEdgeCoarse - 0.5) * 0.105 * ballScale +
+          gasLobes * 0.58 * ballScale
+        ) *
+          materialMotionAmplitude,
+      0.22 * ballScale,
+      0.475 * ballScale
+    );
     float vaporEnvelope =
       1.0 -
       smoothstep(
@@ -1383,13 +1419,12 @@ export const FRAGMENT_SHADER = `
       highlightColor * (0.46 + diffuse * 0.18),
       fresnel * 0.075
     );
-    alpha = max(
-      alpha,
-      shellEnvelope * (0.11 + fresnel * 0.3 + specular * 0.14)
-    );
-    alpha *= 1.0 - fracture * 0.24;
+    float shellSurfaceAlpha =
+      shellEnvelope * (0.11 + fresnel * 0.3 + specular * 0.14);
     vec3 shelledColor = color;
-    float shelledAlpha = alpha;
+    float shelledAlpha =
+      max(min(alpha, shellEnvelope), shellSurfaceAlpha) *
+      (1.0 - fracture * 0.24);
     float shellVisibility = clamp(uShellVisibility, 0.0, 1.0);
     color = mix(smokeOnlyColor, shelledColor, shellVisibility);
     alpha = mix(gasAlpha, shelledAlpha, shellVisibility);
@@ -1409,7 +1444,7 @@ export const FRAGMENT_SHADER = `
       warningColor * (0.82 + glowIntensity * 0.28),
       clamp(warningFlare * 0.88, 0.0, 0.8)
     );
-    color *= uIntensity * (0.7 + glowIntensity * 0.14);
+    color *= 0.84 + glowIntensity * 0.2;
     gl_FragColor = vec4(color, alpha);
   }
 `;

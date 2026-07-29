@@ -1,6 +1,20 @@
-import { forwardRef, useMemo, useRef, type KeyboardEvent, type SVGProps } from "react";
+import {
+  forwardRef,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type KeyboardEvent,
+  type SVGProps,
+} from "react";
 import { DEFAULT_ORB_SCALE, resolveOrbScale } from "./scales";
 import { OrbArtwork } from "./themes/artwork";
+import { CloudFallback } from "./themes/cloud/cloud-fallback";
+import {
+  resolveFlowDuration,
+  resolveGlowDuration,
+  resolveMotionAmplitude,
+} from "./themes/cloud/motion-contract";
 import { useCloudRenderer } from "./themes/cloud/use-cloud-renderer";
 import { DEFAULT_ORB_LABELS, DEFAULT_ORB_MOTION, type OrbProps, type OrbStyle } from "./types";
 import { useOrbSession } from "./use-orb-session";
@@ -109,6 +123,7 @@ export const Orb = forwardRef<HTMLDivElement, OrbProps>(function Orb(
   forwardedRef,
 ) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [fallbackMounted, setFallbackMounted] = useState(theme === "cloud");
   const scale = useMemo(() => resolveOrbScale(scaleProp), [scaleProp]);
   const motion = useMemo(() => ({ ...DEFAULT_ORB_MOTION, ...motionProp }), [motionProp]);
   const labels = useMemo(() => ({ ...DEFAULT_ORB_LABELS, ...labelsProp }), [labelsProp]);
@@ -142,19 +157,41 @@ export const Orb = forwardRef<HTMLDivElement, OrbProps>(function Orb(
     smokeScale,
     cloudMode,
   });
+  const visualState = scale.states[session.state];
+
+  useEffect(() => {
+    if (theme !== "cloud") {
+      setFallbackMounted(false);
+      return;
+    }
+    if (!webglReady) {
+      setFallbackMounted(true);
+      return;
+    }
+
+    const unmountTimer = window.setTimeout(() => setFallbackMounted(false), 220);
+    return () => window.clearTimeout(unmountTimer);
+  }, [theme, webglReady]);
 
   const statusMessage = session.state === "error" ? errorMessage || session.errorMessage : "";
-  const buttonLabel =
-    htmlProps["aria-label"] ??
-    (session.state === "error"
+  const controlLabel =
+    session.state === "error"
       ? labels.retry
       : session.active
         ? labels.stop
         : session.state === "connecting"
           ? labels.connecting
-          : labels.start);
+          : labels.start;
+  const buttonLabel = htmlProps["aria-label"] ?? controlLabel;
   const controlPosition = control?.position ?? "bottom";
   const controlAppearance = control?.appearance ?? "glass";
+  const perceptualAudioLevel = clampScale(
+    Math.max(session.volume, session.inputVolume, session.outputVolume) * motion.sensitivity,
+    0,
+    1,
+  );
+  const flowDuration = resolveFlowDuration(visualState.flowSpeed, motion.speed);
+  const glowDuration = resolveGlowDuration(visualState.glowPulseSpeed, motion.speed);
   const componentStyle: OrbInternalStyle = {
     ...style,
     "--vorb-ui-size": toCssSize(size),
@@ -178,21 +215,27 @@ export const Orb = forwardRef<HTMLDivElement, OrbProps>(function Orb(
     "--voice-orb-warning-base": scale.colors.warning.base,
     "--voice-orb-warning-bright": scale.colors.warning.bright,
     "--voice-orb-warning-lightest": scale.colors.warning.lightest,
-    "--orb-state-turbulence": scale.states[session.state].turbulence,
-    "--orb-state-flow-speed": scale.states[session.state].flowSpeed,
-    "--orb-state-vortex-count": scale.states[session.state].vortexCount,
-    "--orb-state-vortex-strength": scale.states[session.state].vortexStrength,
-    "--orb-state-expansion": scale.states[session.state].expansion,
-    "--orb-state-center-pull": scale.states[session.state].centerPull,
-    "--orb-state-audio-response": scale.states[session.state].audioResponse,
-    "--orb-state-smoke-density": scale.states[session.state].smokeDensity,
-    "--orb-state-glow-intensity": scale.states[session.state].glowIntensity,
-    "--orb-state-glow-pulse-speed": scale.states[session.state].glowPulseSpeed,
-    "--orb-state-warning-distortion": scale.states[session.state].warningDistortion,
-    "--orb-state-tone-position": scale.states[session.state].tonePosition,
+    "--orb-state-turbulence": visualState.turbulence,
+    "--orb-state-flow-speed": visualState.flowSpeed,
+    "--orb-state-vortex-count": visualState.vortexCount,
+    "--orb-state-vortex-strength": visualState.vortexStrength,
+    "--orb-state-expansion": visualState.expansion,
+    "--orb-state-center-pull": visualState.centerPull,
+    "--orb-state-audio-response": visualState.audioResponse,
+    "--orb-state-smoke-density": visualState.smokeDensity,
+    "--orb-state-glow-intensity": visualState.glowIntensity,
+    "--orb-state-glow-pulse-speed": visualState.glowPulseSpeed,
+    "--orb-state-warning-distortion": visualState.warningDistortion,
+    "--orb-state-tone-position": visualState.tonePosition,
     "--orb-active-volume": session.volume,
+    "--orb-input-volume": session.inputVolume,
+    "--orb-output-volume": session.outputVolume,
+    "--orb-perceptual-audio": perceptualAudioLevel,
     "--orb-motion-speed": motion.speed,
-    "--orb-motion-intensity": motion.intensity,
+    "--orb-motion-intensity": resolveMotionAmplitude(motion.intensity),
+    "--orb-motion-sensitivity": motion.sensitivity,
+    "--orb-flow-duration": `${flowDuration}s`,
+    "--orb-glow-duration": `${glowDuration}s`,
   };
 
   const handleRootKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
@@ -222,7 +265,14 @@ export const Orb = forwardRef<HTMLDivElement, OrbProps>(function Orb(
               .filter(Boolean)
               .join(" ")}
           />
-          <div className="voice-orb__canvas-fallback" />
+          {fallbackMounted && (
+            <CloudFallback
+              cloudMode={cloudMode}
+              exiting={webglReady}
+              state={session.state}
+              visual={visualState}
+            />
+          )}
         </>
       ) : (
         <OrbArtwork
@@ -243,6 +293,7 @@ export const Orb = forwardRef<HTMLDivElement, OrbProps>(function Orb(
       data-state={session.state}
       data-theme={theme}
       data-cloud-mode={theme === "cloud" ? cloudMode : undefined}
+      data-motion-level={motion.speed <= 0 ? "static" : "full"}
       data-scale={scale.name}
       data-interactive={session.interactive || undefined}
       data-control-position={session.interactive ? controlPosition : undefined}
@@ -276,6 +327,9 @@ export const Orb = forwardRef<HTMLDivElement, OrbProps>(function Orb(
                 ) : (
                   <PhoneIcon className={session.active ? "voice-orb__hangup" : ""} />
                 )}
+              </span>
+              <span className="voice-orb__control-label" aria-hidden="true">
+                {controlLabel}
               </span>
             </button>
           </div>

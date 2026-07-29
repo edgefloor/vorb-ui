@@ -217,7 +217,7 @@ export function OrbPlayground() {
       showCallControl
         ? `control={{ position: "${controlPosition}", appearance: "${controlAppearance}", size: ${controlSize}, gap: ${controlGap} }}`
         : "interactive={false}",
-      `motion={{ speed: ${reducedMotion ? 0 : speed.toFixed(1)}, intensity: ${intensity.toFixed(1)}, sensitivity: ${sensitivity.toFixed(1)}, attack: ${attack.toFixed(2)}, release: ${release.toFixed(2)} }}`,
+      `motion={{ speed: ${reducedMotion ? 0 : speed.toFixed(1)}, intensity: ${intensity.toFixed(2)}, sensitivity: ${sensitivity.toFixed(1)}, attack: ${attack.toFixed(2)}, release: ${release.toFixed(2)} }}`,
     ];
     return `<Orb\n  ${props.join("\n  ")}\n/>`;
   }, [
@@ -325,7 +325,6 @@ export function OrbPlayground() {
             appearance: controlAppearance,
             size: controlSize,
             gap: controlGap,
-            className: "playground-call-control",
           }}
           ballScale={ballScale}
           smokeScale={smokeScale}
@@ -338,11 +337,6 @@ export function OrbPlayground() {
             release,
           }}
           className={reducedMotion ? "voice-orb--reduced-motion" : undefined}
-          labels={{
-            start: "Start call",
-            stop: "End call",
-            retry: "Try again",
-          }}
           status={supportStatus}
           errorMessage={
             source === "manual" && manualState === "error"
@@ -584,17 +578,17 @@ export function OrbPlayground() {
             value={speed}
             displayValue={`${speed.toFixed(1)}×`}
             min={0}
-            max={2}
+            max={3}
             step={0.1}
             onChange={setSpeed}
           />
           <Setting
             label="Motion intensity"
             value={intensity}
-            displayValue={`${intensity.toFixed(1)}×`}
-            min={0.5}
-            max={1.5}
-            step={0.1}
+            displayValue={`${intensity.toFixed(2)}×`}
+            min={0.25}
+            max={2}
+            step={0.05}
             onChange={setIntensity}
           />
           <Setting

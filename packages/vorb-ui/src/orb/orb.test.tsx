@@ -3,8 +3,10 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { Orb, VoiceOrb } from "./orb";
 import type { OrbAdapter, OrbSignalListener, OrbState } from "./types";
 
+const { cloudRendererState } = vi.hoisted(() => ({ cloudRendererState: { ready: false } }));
+
 vi.mock("./themes/cloud/use-cloud-renderer", () => ({
-  useCloudRenderer: () => false,
+  useCloudRenderer: () => cloudRendererState.ready,
 }));
 
 vi.mock("./use-audio-meter", () => ({
@@ -13,6 +15,8 @@ vi.mock("./use-audio-meter", () => ({
 
 afterEach(() => {
   cleanup();
+  cloudRendererState.ready = false;
+  vi.useRealTimers();
 });
 
 function createAdapter(initialState: OrbState = "idle") {
@@ -79,6 +83,60 @@ describe("Orb", () => {
     expect(view.container.querySelector("[data-cloud-surface]")).toBeTruthy();
   });
 
+  it.each(["shell", "gas", "vapor"] as const)(
+    "mounts only the selected %s SVG fallback recipe",
+    (cloudMode) => {
+      const view = render(<Orb state="thinking" theme="cloud" cloudMode={cloudMode} />);
+      const fallback = view.container.querySelector(`[data-cloud-fallback="${cloudMode}"]`);
+      expect(fallback).toBeTruthy();
+      expect(fallback?.querySelectorAll(".voice-orb__fallback-material")).toHaveLength(1);
+      expect(fallback?.querySelector(`.voice-orb__fallback-material--${cloudMode}`)).toBeTruthy();
+      expect(
+        fallback?.querySelector(
+          ".voice-orb__fallback-pose .voice-orb__fallback-drift .voice-orb__fallback-audio",
+        ),
+      ).toBeTruthy();
+      expect(fallback?.querySelector('[pathLength="1"]')).toBeTruthy();
+    },
+  );
+
+  it("maps thinking vortex count into fallback circulation cells and keeps SVG ids unique", () => {
+    const view = render(
+      <>
+        <Orb
+          state="thinking"
+          theme="cloud"
+          scale={{ base: "crystal", states: { thinking: { vortexCount: 2 } } }}
+        />
+        <Orb state="thinking" theme="cloud" />
+      </>,
+    );
+    const fallbacks = view.container.querySelectorAll("[data-cloud-fallback]");
+    expect(fallbacks).toHaveLength(2);
+    expect(fallbacks[0]?.querySelectorAll(".voice-orb__fallback-thinking-cell")).toHaveLength(2);
+    expect(fallbacks[1]?.querySelectorAll(".voice-orb__fallback-thinking-cell")).toHaveLength(3);
+
+    const ids = [...view.container.querySelectorAll("[data-cloud-fallback] [id]")].map(
+      (element) => element.id,
+    );
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+
+  it("unmounts the SVG fallback after the WebGL crossfade", () => {
+    vi.useFakeTimers();
+    const view = render(<Orb state="idle" theme="cloud" />);
+    expect(view.container.querySelector("[data-cloud-fallback]")).toBeTruthy();
+
+    cloudRendererState.ready = true;
+    view.rerender(<Orb state="idle" theme="cloud" />);
+    expect(
+      view.container.querySelector("[data-cloud-fallback]")?.hasAttribute("data-exiting"),
+    ).toBe(true);
+
+    act(() => vi.advanceTimersByTime(220));
+    expect(view.container.querySelector("[data-cloud-fallback]")).toBeNull();
+  });
+
   it("keeps every theme mounted across the complete state matrix", () => {
     const themes = {
       cloud: "[data-cloud-surface]",
@@ -114,7 +172,7 @@ describe("Orb", () => {
     for (const theme of ["cloud", "circle", "bars", "radial", "debug"] as const) {
       const view = render(<Orb state="idle" theme={theme} onStart={() => undefined} />);
       const control = view.getByRole("button", {
-        name: "Start voice session",
+        name: "Start call",
       });
       expect(control.classList.contains("voice-orb__control")).toBe(true);
       expect(control.querySelector(".voice-orb__visual")).toBeNull();
@@ -135,7 +193,7 @@ describe("Orb", () => {
   it("keeps radial's phone control separate from its artwork", () => {
     const view = render(<Orb state="idle" theme="radial" onStart={() => undefined} />);
     const control = view.getByRole("button", {
-      name: "Start voice session",
+      name: "Start call",
     });
     expect(control.classList.contains("voice-orb__control")).toBe(true);
     expect(control.querySelector(".voice-orb__visual")).toBeNull();
@@ -215,6 +273,28 @@ describe("Orb", () => {
     expect(root.style.getPropertyValue("--orb-state-smoke-density")).toBe("0.87");
     expect(root.style.getPropertyValue("--orb-state-tone-position")).toBe("0.32");
   });
+
+  it("shares linear speed and deformation-only intensity tokens with CSS renderers", () => {
+    const view = render(
+      <Orb state="thinking" theme="cloud" motion={{ speed: 1, intensity: 8 }} data-testid="orb" />,
+    );
+    const root = view.getByTestId("orb");
+    const normalDuration = Number.parseFloat(root.style.getPropertyValue("--orb-flow-duration"));
+    expect(root.style.getPropertyValue("--orb-motion-intensity")).toBe("2");
+
+    view.rerender(
+      <Orb
+        state="thinking"
+        theme="cloud"
+        motion={{ speed: 2, intensity: 0.1 }}
+        data-testid="orb"
+      />,
+    );
+    const fastDuration = Number.parseFloat(root.style.getPropertyValue("--orb-flow-duration"));
+    expect(fastDuration).toBeCloseTo(normalDuration / 2, 8);
+    expect(root.style.getPropertyValue("--orb-motion-intensity")).toBe("0.25");
+  });
+
   it("renders every passive theme without an inert button", () => {
     for (const theme of ["cloud", "radial", "circle", "bars", "debug"] as const) {
       const view = render(<Orb state="idle" theme={theme} showStatus />);
@@ -226,7 +306,9 @@ describe("Orb", () => {
 
   it("renders an accessible control when a lifecycle exists", () => {
     const view = render(<Orb state="idle" theme="cloud" onStart={() => undefined} />);
-    expect(view.getByRole("button", { name: "Start voice session" })).toBeTruthy();
+    const control = view.getByRole("button", { name: "Start call" });
+    expect(control).toBeTruthy();
+    expect(control.querySelector(".voice-orb__control-label")?.textContent).toBe("Start call");
   });
 
   it("keeps the session control outside the ball artwork", () => {
@@ -282,12 +364,12 @@ describe("Orb", () => {
     const onStop = vi.fn();
     const view = render(<Orb adapter={adapter} onStart={onStart} onStop={onStop} />);
 
-    fireEvent.click(view.getByRole("button", { name: "Start voice session" }));
+    fireEvent.click(view.getByRole("button", { name: "Start call" }));
     await waitFor(() => expect(onStart).toHaveBeenCalledOnce());
     expect(adapter.start).not.toHaveBeenCalled();
 
     act(() => emit("listening"));
-    fireEvent.click(view.getByRole("button", { name: "Stop voice session" }));
+    fireEvent.click(view.getByRole("button", { name: "End call" }));
     await waitFor(() => expect(onStop).toHaveBeenCalledOnce());
     expect(adapter.stop).not.toHaveBeenCalled();
   });
@@ -388,11 +470,9 @@ describe("Orb", () => {
     });
 
     const view = render(<Orb requestMicrophone />);
-    fireEvent.click(view.getByRole("button", { name: "Start voice session" }));
-    await waitFor(() =>
-      expect(view.getByRole("button", { name: "Stop voice session" })).toBeTruthy(),
-    );
-    fireEvent.click(view.getByRole("button", { name: "Stop voice session" }));
+    fireEvent.click(view.getByRole("button", { name: "Start call" }));
+    await waitFor(() => expect(view.getByRole("button", { name: "End call" })).toBeTruthy());
+    fireEvent.click(view.getByRole("button", { name: "End call" }));
     await waitFor(() => expect(stop).toHaveBeenCalledOnce());
     view.unmount();
     expect(stop).toHaveBeenCalledOnce();
@@ -413,7 +493,7 @@ describe("Orb", () => {
     });
 
     const view = render(<Orb requestMicrophone />);
-    fireEvent.click(view.getByRole("button", { name: "Start voice session" }));
+    fireEvent.click(view.getByRole("button", { name: "Start call" }));
     view.unmount();
     await act(async () => {
       resolveStream?.(stream);

@@ -191,9 +191,9 @@ export const DEFAULT_ORB_LABELS: OrbLabels = {
   thinking: "Thinking",
   speaking: "Speaking",
   error: "Voice session unavailable",
-  start: "Start voice session",
-  stop: "Stop voice session",
-  retry: "Retry voice session",
+  start: "Start call",
+  stop: "End call",
+  retry: "Try again",
 };
 
 /** @deprecated Use OrbState. */
